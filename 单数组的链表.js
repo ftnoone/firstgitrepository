@@ -79,8 +79,8 @@ class singleArrList{
         var rightLimit = listQue.extractRoot().root, prev, next, h = new hashMap(i), leftLimit = freeQue.extractRoot().root;
         while(leftLimit < rightLimit){
            // console.log("这是遍历数组的i和limit", i, limit);
-               // console.log("这是数组的free空间", i, this.arr[i]);
-               // console.log("检查数组：" + this.arr.toString());
+               //console.log("这是数组的free空间", leftLimit, this.arr[leftLimit]);
+               //console.log("检查数组：" + this.arr.toString());
                 node = rightLimit;
                 h.insert(leftLimit, this.getFreeNode(leftLimit));
                 prev = l.getPrev(node);
@@ -88,15 +88,16 @@ class singleArrList{
                 l.setKey(leftLimit, l.getKey(node));
                 l.setNext(leftLimit, next);
                 l.setPrev(leftLimit, prev);
-                if(next == l.nullNode){
-                    l.tail = leftLimit;
-                }else{
+                if(next != l.nullNode){
                     l.setPrev(next, leftLimit);
                 }
                 if(prev == l.nullNode){
                     l.head = leftLimit;
                 }else {
                     l.setNext(prev, leftLimit);
+                }
+                if(node == l.tail){
+                    l.tail = l.setTail(next, prev);
                 }
                 this.setFreeNode(node, this.free);
                 this.setFree(node);
@@ -124,7 +125,7 @@ class singleArrList{
                 node = this.getFreeNode(node);
             }
         }
-        console.log("压缩了" + h.eleNum + "个元素");
+        //console.log("压缩了" + h.eleNum + "个元素");
     }
     showFree(){
         if(this.isNull(this.free)) return;
@@ -159,6 +160,18 @@ class list{
         this.tail = this.nullNode;
         this.eleNum = 0;
     }
+    setTail(...arr){
+        this.tail = this.getMaxNode(arr);
+    }
+    getMaxNode(arr){
+        var max = -1;
+        for(let i = 0, len = arr.length; i < len; i ++){
+            if(arr[i] == this.nullNode) continue;
+            if(arr[i] > max) max = arr[i];
+        }
+        if(max == -1) return this.nullNode;
+        else return max;
+    }
     checkList(){
         var node = this.head, prev = this.nullNode, i = 0;
         while(node != this.nullNode){
@@ -173,7 +186,7 @@ class list{
     insert(key){
         var a = this.obj.allocate();
         if(a == -1) return -1;
-        if(this.tail < a) this.tail = a;
+        this.tail = this.setTail(a, this.tail);
         this.setNext(a, this.head);
         if(this.head != this.nullNode){
             this.setPrev(this.head, a);
@@ -185,6 +198,8 @@ class list{
         return 0;
     }
     search(key){
+        //console.log(this.listArr);
+        //this.show();
         var node = this.head;
         while(node != this.nullNode && this.getKey(node) != key){
             node = this.getNext(node);
@@ -202,8 +217,8 @@ class list{
                 this.setPrev(next, prev);
             }
             if(this.tail == node) {
-                this.tail = prev;
-                if(next > prev) this.tail = next;
+                this.tail = this.setTail(prev, next);
+                //this.setMaxTail(prev, next);
             }
             this.obj.collect(node);
             this.eleNum --;
@@ -220,14 +235,14 @@ class list{
             }else this.head = next;//如果没有前置节点，说明是头结点，删除元素要改变链表头部的指向
             if(next != this.nullNode) this.setPrev(next, prev);//先使node节点的后置节点next的前置节点地址指向node节点的前置节点prev
             if(node == this.tail){//如果是删除尾节点，要改变尾链表部的指向，不用考虑后置节点
-                this.tail = prev;
-                if(next > prev) this.tail = next;
+                //this.setMaxTail(prev, next);
+                this.tail = this.setTail(prev, next);
             }else{//否则有后置节点，要考虑后置节点的处理，并且要进行压缩链表数组的处理
-                if(node < this.tail){//如果空缺的地方在尾部的前面，才进行压缩处理
+                if(this.tail != this.nullNode && node < this.tail){//如果空缺的地方在尾部的前面，才进行压缩处理
                     prev = this.getPrev(this.tail);//prev指向尾节点的前置节点
                     next = this.getNext(this.tail);
                     if(prev == this.nullNode){//如果尾节点没有前置节点，说明只剩下一个节点，直接进行复制并将node指向尾节点释放即可
-                        l.head = node;//只有一个节点，改变头结点指向
+                        this.head = node;//只有一个节点，改变头结点指向
                     }else this.setNext(prev, node);
                     if(next != this.nullNode) this.setPrev(next, node); 
                     this.setKey(node, this.getKey(this.tail));//复制尾节点到node处
@@ -235,9 +250,14 @@ class list{
                     this.setNext(node, next);
                     var max = node;
                     node = this.tail;
-                    this.tail = prev;
-                    if(next > prev) this.tail = next;
-                    if(max > this.tail) this.tail = max;
+                    this.tail = this.setTail(prev, next, max);
+                    //this.setMaxTail(prev, next, max);
+                    //this.tail = prev;
+                    // console.log(this.tail)
+                    // if(next > prev) this.tail = next;
+                    // console.log(this.tail)
+                    // if(max > this.tail) this.tail = max;
+                    // console.log(this.tail)
                 }
             }
             this.obj.collect(node);
@@ -255,16 +275,17 @@ class list{
         console.log(str + "size: " + this.eleNum);
     }
     reverse(){//反转链表
-        var node = this.head, prev = this.nullNode, next;
-        this.tail = node;
+        var node = this.head, prev = this.nullNode, next, max = -1;
         while(node != this.nullNode){
+            if(node > max) max = node;
             prev = this.getPrev(node);
             next = this.getNext(node);
-            console.log(node, next, prev)
+            //console.log(node, next, prev)
             this.setNext(node, prev);
             this.setPrev(node, next);
             node = next;
         }
+        if(this.max != -1) this.tail = max
         if(prev != this.nullNode) this.head = this.getPrev(prev);
     }
     freeList(){//释放整个链表
@@ -591,7 +612,6 @@ class hashMap{
     }
     show(){
         var str = "";
-        console.log(this.arr.toString());
         var node = this.other;
         while(node != null){
             str += node + " -> ";
@@ -611,13 +631,15 @@ class hashMap{
     }
 }
 
-
+var a,l;
 function test1(){
-    var a = new singleArrList(100), l = new list(a), arr = new Array(300), insert = new priorityQue(new Array(300), 0, 1);
+    a = new singleArrList(10);
+    l = new list(a);
+    var arr = new Array(300), insert = new priorityQue(new Array(300), 0, 1);
     for(let i = 0; i < 300; i ++) arr[i] = floor(random() * 1000000);
     var step = 0, check;
     while(step < 100){
-        for(let i = 0, num; i < 100; i ++){
+        for(let i = 0, num; i < 12; i ++){
             if(floor(random() * 2) != 0){
                 num = floor(random()*300);
                 if(l.insert(arr[num]) == 0){
@@ -626,18 +648,29 @@ function test1(){
             }else{
                 num = insert.extractRoot();
                 if(num.exist){
-                    l.delete(num.root);
+                   // console.log(a.arr.toString(), l.checkList(), l.head, l.eleNum,l.tail);
+                    //console.log("delete",num.root)
+                    if(floor(random() * 3) != 0) l.compactDelete(num.root);
+                    else l.delete(num.root);
+                    //console.log(a.arr.toString(), l.checkList())
+                    //l.show();
+                    if(l.checkList() == false) throw new Error("checkerror");
                 }
             }
         }
+        //console.log("这是压缩前的数组", a.arr.toString());
+        //l.show();
+        //insert.toStringByLine()
         if(floor(random() * 4) != 0){
             //a.showFree();
             a.compactify(l);
             //a.showFree();
         }
+        //console.log("这是压缩后的数组",  a.arr.toString())
+        //l.show();
         check = l.checkList();
         console.log(step, check);
-        if(check)  step ++;
+        if(check) step ++;
         else break;
     }
     return {
@@ -645,7 +678,7 @@ function test1(){
         l: l
     }
 }
-//var {a,l} = test1();
+//test1();
 function test2(){
     var a = new singleArrList(100), l = new list(a), arr = new Array(300), insert = new priorityQue(new Array(300), 0, 1);
     for(let i = 0; i < 300; i ++) arr[i] = floor(random() * 1000000);
@@ -682,7 +715,7 @@ function test3(){
     for(let i = 0; i < 300; i ++) arr[i] = floor(random() * 1000000);
     var step = 0, check1, check2;
     while(step < 100){
-        for(let i = 0, num; i < 120; i ++){
+        for(let i = 0, num; i < 200; i ++){
             num = floor(random()*300);
             if(floor(random() * 2) != 0){
                 if(l1.insert(arr[num]) == 0){
@@ -693,28 +726,32 @@ function test3(){
                     insert2.insert(arr[num]);
                 }
             }
-            if(floor(random() * 2) != 0){
-                num = insert2.extractRoot();
-                if(num.exist){
-                    l2.delete(num.root);
-                }
-            }else{
-                num = insert1.extractRoot();
-                if(num.exist){
-                    l1.delete(num.root);
+            
+            if(floor(random() * 2) == 0){
+                if(floor(random() * 2) != 0){
+                    num = insert2.extractRoot();
+                    if(num.exist){
+                        if(floor(random() * 3) != 0) l2.compactDelete(num.root);
+                        else l2.delete(num.root);
+                    }
+                }else{
+                    num = insert1.extractRoot();
+                    if(num.exist){
+                        if(floor(random() * 3) != 0) l1.compactDelete(num.root);
+                        else l1.delete(num.root);
+                    }
                 }
             }
         }
+        if(floor(random() * 3) == 0) l1.reverse();
+        if(floor(random() * 3) == 0) l2.reverse();
+        if(floor(random() * 4) == 0) a.compactify(l1);
+        if(floor(random() * 4) == 0) a.compactify(l2);
         check1 = l1.checkList();
         check2 = l2.checkList();
-        console.log(step, check1,check2);
         if(check1 && check2)  step ++;
-        else break;
+        else throw new Error("false");
     }
-    return {
-        a: a,
-        l1: l1,
-        l2:l2
-    }
+    console.log("true")
 }
-//var {a,l1,l2} = test();
+test3();
