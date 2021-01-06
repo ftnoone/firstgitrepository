@@ -23,6 +23,9 @@ function showBinaryTree(tree){//对普通左右节点二叉树，且含有指向
         }
     }
 }
+
+showBinaryTree(tree);
+
 class binaryTree{
     constructor(){
 
