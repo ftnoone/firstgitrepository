@@ -1,4 +1,4 @@
-function showBinaryTree(tree){
+function showBinaryTree(tree){//对普通左右节点二叉树，且含有指向父节点的指针的非递归遍历算法
     var node = tree.getRoot(), n = tree.getSize(), i = 0, prev, root = node;
     while(!tree.isNullNode(node)){
         console.log(tree.getVal(node));
