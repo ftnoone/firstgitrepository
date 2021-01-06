@@ -69,8 +69,13 @@ class singleArrList{//以下说的最高位建立在是4个字节32位的整型�
         var listQue = new priorityQue(arr, i, 1);//这是一个我写的优先队列的实现，建议转到相关文件查看，当成最大二叉堆使用，建立堆需要O(n)时间，找出最大元素需要O(lgn)时间
         arr = new Array(this.freeEleNum);//这个数组用来放所有的free链元素
         i = 0;
+        var freePrev = this.nullNode;
         for(node = this.free; node != this.nullNode;){
-            arr[i ++] = node;
+            arr[i ++] = {
+                key: node,
+                ele: freePrev
+            };
+            freePrev = node;
             node = this.getFreeNode(node);
         }
         var freeQue = new priorityQue(arr, i, 0);//第三个参数是0，最小二叉堆
@@ -330,17 +335,22 @@ class list{
 
 var random = Math.random, floor = Math.floor;
 class priorityQue{
-    constructor(arr, eleNum, type = 0){
+    constructor(arr, eleNum, type = 0, eleType = 0){
         if(!(arr instanceof Array) || eleNum == undefined || eleNum > arr.length || eleNum < 0)  throw new Error("请输入正确参数");
         this.heap = arr;
         this.eleNum = eleNum;//elenum指元素的数目，用elenum访问数组时，要进行下标处理，即减一
         this.type = type; //0最小堆 1最大堆
         this.buildHeap(arr, eleNum);
+        this.eleType = eleType;
     }
     buildHeap(heap, size){//从n/2处向下更新，因为定理从0到n/2都有子节点，所以只要保证这些节点的子节点较大即可
         for(let i = floor(size / 2) - 1; i >= 0; i --){
             this.renewDown(i, heap[i]);
         }
+    }
+    getKey(i){
+        if(this.ele == 0) return this.heap[i];
+        return this.heap[i].key;
     }
     getRoot(){
         if(this.eleNum == 0) return {
