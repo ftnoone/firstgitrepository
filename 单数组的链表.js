@@ -1,88 +1,88 @@
-class singleArrList{
+class singleArrList{//以下说的最高位建立在是4个字节32位的整型的情况下，我用对c语言的部分理解来写的数组链表，但是js的数字并不是固定的整型，也可以更大，更换类型等
     constructor(size){//分配size*3大小的数组，用来做链表的分配，同一个数组可以用作多个链表的使用
-        this.arr = new Array(size * 3);
+        this.arr = new Array(size * 3);//在free链中 用每三个挨着的数组空间的第一个空间放置下一个节点的索引，在this.free中放第一个free节点的索引，可以通过this.free头一个一个访问
         this.size = size;
-        this.free = 0;
-        this.freeBit = 32;
+        this.free = 0;//free链的头，free链表示所有的空的节点，即可以拿来分配的节点
+        this.freeBit = 32;//原来的compactify要扫描从0整个数组，比较笨，遗留下需要确定是否是free链中的元素的问题（现在直接扫描free链，然后放进最小二叉堆取出最左边，最小 的元素），如果你看到了，可以试着更改
         this.freeNode = 1 << (this.freeBit - 1);//用来获取free节点和确定是否是free节点，是则设置最高位是1，获取只要把最高位变成0即可
         this.nullNode = this.freeNode + (~this.freeNode);//free链里代表
-        this.freeEleNum = size;
-        this.refresh();
+        this.freeEleNum = size;//free链中free节点的数量，用来在compactify中创建free优先队列
+        this.refresh();//更新数组，初始化free链
     }
     refresh(){//重置数组，可以重新分配，free链的节点形式是 [后置free空间的数组索引][null][null]
         for(let i = 0; i < this.size; i ++){
             this.setFreeNode(i * 3, (i + 1) * 3);
         }
-        this.arr[(this.size - 1) * 3] = this.nullNode;
+        this.arr[(this.size - 1) * 3] = this.nullNode;//最后一个节点设置-1，表示后面没有节点了，因为在三个数组空间的第一个放后置节点的地址
         this.free = 0;
         this.freeEleNum = this.size;
     }
     getFree(){
         return this.free;
     }
-    setFree(key){
-        if(this.isNull(key)) this.free = this.nullNode;
+    setFree(key){//因为compactify遗留问题，用-1表示没有节点了，而其它节点又是正数，free节点又要在最高位放1来保证compactify扫描时知道是不是free节点
+        if(this.isNull(key)) this.free = this.nullNode;//-1直接设置-1，-1本身最高位是1
         else this.free = key & (~(this.freeNode));
     }
-    setFreeNode(i, x){
+    setFreeNode(i, x){//注意这里直接设置free节点的值，不进行检查
         this.arr[i] = x | (this.freeNode);
     }
-    getFreeNode(i){
+    getFreeNode(i){//这里读取时检查了free节点的值，保证free节点里面放的是-1时，返回-1，compactify方法遗留问题
         var val = this.arr[i];
         if(this.isNull(val)) return val;
         return val & (~(this.freeNode));
     }
-    allocate(){//分配一个空间
-        if(this.isNull(this.free)) return -1;
+    allocate(){//分配一个空间，把this.free指向this.free的后置节点，然后把this.free分配出去，当然是在this.free非-1的情况下，-1了代表没有free空间了
+        if(this.isNull(this.free)) return -1;//注意this.free会变成-1，因为是通过getfreenode方法来获取的后置节点
         var a = this.free;
-        this.setFree(this.getFreeNode(this.free));
-        this.freeEleNum --;
+        this.setFree(this.getFreeNode(this.free));//这里有重复的地方，所以java的所有字段建立get和set还是有道理的，建议这样做
+        this.freeEleNum --;//当然free元素的数量减一
         return a;
     }
-    isNull(key){
+    isNull(key){//确定一个值是否代表是free链中代表结束的值，是否是-1
         return key == this.nullNode;
     }
-    isNullNode(i){
+    isNullNode(i){//读取节点的值确定是否是结束的值，是否是-1
         return this.arr[i] == this.nullNode;
     }
-    collect(x){//回收一个空间
+    collect(x){//回收一个空间，通过把x索引的数组元素设置为指向原来的this.free借的，即free链的头节点，注意free链中的指向，是指向后一个元素，free节点的索引，然后this.free指向x即可
         this.setFreeNode(x, this.free);
         this.setFree(x);
         this.freeEleNum ++;
     }
-    isFree(key){
+    isFree(key){//compactify遗留问题，原来判断是不是free链中的元素
         return (key & (this.freeNode)) == this.freeNode;
     }
-    isFreeNode(i){
+    isFreeNode(i){//compactify遗留问题，判断是不是free节点
         return (this.arr[i] & (this.freeNode)) == this.freeNode;
     }
-    compactify(l){ //将链表紧缩，数组的前部如果有空则移动链表节点
+    compactify(l){ //将链表紧缩，数组的前部如果有空则移动链表节点，这就是那个遗留下诸多问题的compactify，不过是因为优化过所以以前的compactify用东西而现在不需要的就变成遗留问题
         if(!(l instanceof list)) return;
-        if(l.eleNum == 0 || this.isNull(this.free)) return;
+        if(l.eleNum == 0 || this.isNull(this.free)) return;//紧缩数组是指把分配出去，回收回来的反复过程中，分配的空间和free的空间相互夹杂，通过把free空间用链表list的元素占据，原来元素的节点回收保证分配的空间紧紧的占据最前面的空间，所以要保证free空间非空，即free链非空
         var node = l.head;
-        var arr = new Array(l.eleNum), i = 0;
+        var arr = new Array(l.eleNum), i = 0;//这个数组用来放链表的所有节点的索引
         while(node != l.nullNode){
             //str += node + " ";
             arr[i ++] = node;
             node = l.getNext(node);
         }
-        var listQue = new priorityQue(arr, i, 1);
-        arr = new Array(this.freeEleNum);
+        var listQue = new priorityQue(arr, i, 1);//这是一个我写的优先队列的实现，建议转到相关文件查看，当成最大二叉堆使用，建立堆需要O(n)时间，找出最大元素需要O(lgn)时间
+        arr = new Array(this.freeEleNum);//这个数组用来放所有的free链元素
         i = 0;
         for(node = this.free; node != this.nullNode;){
             arr[i ++] = node;
             node = this.getFreeNode(node);
         }
-        var freeQue = new priorityQue(arr, i, 0);
+        var freeQue = new priorityQue(arr, i, 0);//第三个参数是0，最小二叉堆
         i = this.freeEleNum;
         if(l.eleNum < i) i = l.eleNum;
-        var rightLimit = listQue.extractRoot().root, prev, next, h = new hashMap(i), leftLimit = freeQue.extractRoot().root;
-        while(leftLimit < rightLimit){
+        var rightLimit = listQue.extractRoot().root, prev, next, h = new hashMap(i), leftLimit = freeQue.extractRoot().root;//然后是自己写的很丑的哈希表，只需要free链和链表元素数量的最小值即可，为什么你不明白？因为紧缩不可能超过free链元素数量，不可能超过list元素数量
+        while(leftLimit < rightLimit){//紧缩过程开始了，紧缩这个名字感觉不是很好，取出数组最右边的list节点，和数组最左边的free链元素，置换两个元素，要保证list链的顺序不发生改变，只要有最左free链元素在最右list元素的左边就一直置换，当然的是在都有元素的情况下，暂时没写多链表紧缩，如果你有兴趣，可以写所有链表紧缩
            // console.log("这是遍历数组的i和limit", i, limit);
                //console.log("这是数组的free空间", leftLimit, this.arr[leftLimit]);
                //console.log("检查数组：" + this.arr.toString());
-                node = rightLimit;
-                h.insert(leftLimit, this.getFreeNode(leftLimit));
+                node = rightLimit;//置换的list节点
+                h.insert(leftLimit, this.getFreeNode(leftLimit));//先放进哈希表，后面用来整理free链时用，建议修改，我去修改了
                 prev = l.getPrev(node);
                 next = l.getNext(node);
                 l.setKey(leftLimit, l.getKey(node));
