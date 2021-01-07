@@ -1,16 +1,21 @@
 var random = Math.random, floor = Math.floor;
 class priorityQue{
-    constructor(arr, eleNum, type = 0){
+    constructor(arr, eleNum, type = 0, eleType = 0){
         if(!(arr instanceof Array) || eleNum == undefined || eleNum > arr.length || eleNum < 0)  throw new Error("请输入正确参数");
         this.heap = arr;
         this.eleNum = eleNum;//elenum指元素的数目，用elenum访问数组时，要进行下标处理，即减一
         this.type = type; //0最小堆 1最大堆
         this.buildHeap(arr, eleNum);
+        this.eleType = eleType;
     }
     buildHeap(heap, size){//从n/2处向下更新，因为定理从0到n/2都有子节点，所以只要保证这些节点的子节点较大即可
         for(let i = floor(size / 2) - 1; i >= 0; i --){
             this.renewDown(i, heap[i]);
         }
+    }
+    getKey(i){
+        if(this.ele == 0) return this.heap[i];
+        return this.heap[i].key;
     }
     getRoot(){
         if(this.eleNum == 0) return {
@@ -23,7 +28,8 @@ class priorityQue{
     }
     extractRoot(){//删除根节点
         if(this.eleNum == 0) return {
-            exist: false
+            exist: false,
+            root: null
         };
         var root = this.heap[0], key = this.heap[-- this.eleNum];
         this.renewDown(0, key);
@@ -121,8 +127,8 @@ class priorityQue{
         return result;
     }
     renewDown(i, key){//二叉堆向下更新
-        var node;
-        for(let j = i + 1, limit = floor(this.eleNum / 2), left, right; j <= limit;){ 
+        var node = i + 1;
+        for(let j = node, limit = floor(this.eleNum / 2), left, right; j <= limit;){ 
             left = 2 * j;
             right = left + 1;
             node = left;
@@ -135,7 +141,6 @@ class priorityQue{
             }
 
             //key <= this.heap[node - 1] 
-            console.log(key, this.heap[node - 1], this.renewDownCheck(key, this.heap[node - 1]));
             if(this.renewDownCheck(key, this.heap[node - 1])){
                 this.heap[j - 1] = key;
                 return;

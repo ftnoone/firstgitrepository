@@ -102,7 +102,7 @@ class singleArrList{//以下说的最高位建立在是4个字节32位的整型�
                     l.setNext(prev, leftLimit);
                 }
                 if(node == l.tail){
-                    l.tail = l.setTail(next, prev);
+                    l.tail = l.setTail(next, prev);//之前这里错误
                 }
                 this.setFreeNode(node, this.free);
                 this.setFree(node);

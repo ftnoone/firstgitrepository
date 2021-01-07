@@ -12,7 +12,7 @@ function showBinaryTree(tree){//对普通左右节点二叉树，且含有指向
             while(tree.hasParent(node)){
                 prev = node;
                 node = tree.getParent(node);
-                if(prev == tree.getLeft(node)){
+                if(tree.hasLeft(node) && prev == tree.getLeft(node)){
                     if(tree.hasRight(node)){
                         node = tree.getRight(node);
                         break;
