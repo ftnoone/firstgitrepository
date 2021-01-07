@@ -1,3 +1,26 @@
+function findKey(listArr, list, key){//如果list从小到大排列，listArr中只有这一个list，才可以用，如果元素不同，有n^(1/2)的期望时间复杂度
+    if(!(listArr instanceof singleArrList) || !(list instanceof linkedList)) return;
+    listArr.compactify(list);
+    var node = list.head, i, val, val2 = list.getKey(node);;
+    while(!list.isNullNode(node) && val2 < key){
+        i = floor(random()*list.eleNum) * 3;
+        val = list.getKey(i);
+        if(val > val2 && val <= key){
+            if(val == key) return i;
+            node = i;
+        }
+        node = list.getNext(node);
+        val2 = list.getKey(node);
+    }
+    if(list.isNullNode(node) || val2 > key) return;
+    else return node;
+}
+
+//数学证明 O(t + E(x))
+//E(x) = (黎曼和i(0, n))(i * pr(i)) = (黎曼和i(0, n))( i * ( pr( x >= i ) - pr( x >= (i + 1) ) ) ) = (黎曼和i(1, n))( pr( x >= i ) ) 在x>=i加了i次，又在上一项被减了i - 1次，所以只剩下x>=i
+//E(xt) = (黎曼和i(1, n)) (pr(x >= i)) = (黎曼和i(1, n)) ( ((n - i)/n) ^t ) = (黎曼和i(0, n - 1)) ((1 / n) ^t) = 1/(n^t)(黎曼和i(0, n - 1))(i^t) <= n/(t + 1)  
+//当t = n^(1/2)，时间复杂度为 O(n^(1/2))
+
 class singleArrList{//以下说的最高位建立在是4个字节32位的整型的情况下，我用对c语言的部分理解来写的数组链表，但是js的数字并不是固定的整型，也可以更大，更换类型等
     constructor(size){//分配size*3大小的数组，用来做链表的分配，同一个数组可以用作多个链表的使用
         this.arr = new Array(size * 3);//在free链中 用每三个挨着的数组空间的第一个空间放置下一个节点的索引，在this.free中放第一个free节点的索引，可以通过this.free头一个一个访问
@@ -57,7 +80,7 @@ class singleArrList{//以下说的最高位建立在是4个字节32位的整型�
         return (this.arr[i] & (this.freeNode)) == this.freeNode;
     }
     compactify(l){ //将链表紧缩，数组的前部如果有空则移动链表节点，这就是那个遗留下诸多问题的compactify，不过是因为优化过所以以前的compactify用东西而现在不需要的就变成遗留问题
-        if(!(l instanceof list)) return;
+        if(!(l instanceof linkedList)) return;
         if(l.eleNum == 0 || this.isNull(this.free)) return;//紧缩数组是指把分配出去，回收回来的反复过程中，分配的空间和free的空间相互夹杂，通过把free空间用链表list的元素占据，原来元素的节点回收保证分配的空间紧紧的占据最前面的空间，所以要保证free空间非空，即free链非空
         var node = l.head;
         var arr = new Array(l.eleNum), i = 0;//这个数组用来放链表的所有节点的索引
@@ -154,7 +177,7 @@ class singleArrList{//以下说的最高位建立在是4个字节32位的整型�
     }
 }
 
-class list{
+class linkedList{
     constructor(arrList){
         if(!(arrList instanceof singleArrList)) throw new Error("参数应该是singleArrList类型");
         this.nullBit = arrList.freeBit - 1;
@@ -644,7 +667,7 @@ class hashMap{
 var a,l;
 function test1(){
     a = new singleArrList(10);
-    l = new list(a);
+    l = new linkedList(a);
     var arr = new Array(300), insert = new priorityQue(new Array(300), 0, 1);
     for(let i = 0; i < 300; i ++) arr[i] = floor(random() * 1000000);
     var step = 0, check;
@@ -690,7 +713,7 @@ function test1(){
 }
 //test1();
 function test2(){
-    var a = new singleArrList(100), l = new list(a), arr = new Array(300), insert = new priorityQue(new Array(300), 0, 1);
+    var a = new singleArrList(100), l = new linkedList(a), arr = new Array(300), insert = new priorityQue(new Array(300), 0, 1);
     for(let i = 0; i < 300; i ++) arr[i] = floor(random() * 1000000);
     var step = 0, check;
     while(step < 100){
@@ -721,7 +744,7 @@ function test2(){
 }
 function test3(){
     var a = new singleArrList(100), arr = new Array(300), insert1 = new priorityQue(new Array(100), 0, 1), insert2 = new priorityQue(new Array(100), 0, 1);
-    var l1 = new list(a), l2 = new list(a);
+    var l1 = new linkedList(a), l2 = new linkedList(a);
     for(let i = 0; i < 300; i ++) arr[i] = floor(random() * 1000000);
     var step = 0, check1, check2;
     while(step < 100){
