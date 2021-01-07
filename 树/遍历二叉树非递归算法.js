@@ -48,6 +48,12 @@ class binaryTree{
     getRight(node){
 
     }
+    hasLeft(node){
+
+    }
+    hasRight(node){
+        
+    }
     hasParent(){
 
     }
