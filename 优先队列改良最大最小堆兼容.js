@@ -5,8 +5,8 @@ class priorityQue{
         this.heap = arr;
         this.eleNum = eleNum;//elenum指元素的数目，用elenum访问数组时，要进行下标处理，即减一
         this.type = type; //0最小堆 1最大堆
+        this.eleType = eleType;//元素类型，引用类型还是基本类型
         this.buildHeap(arr, eleNum);
-        this.eleType = eleType;
     }
     buildHeap(heap, size){//从n/2处向下更新，因为定理从0到n/2都有子节点，所以只要保证这些节点的子节点较大即可
         for(let i = floor(size / 2) - 1; i >= 0; i --){
@@ -14,8 +14,18 @@ class priorityQue{
         }
     }
     getKey(i){
-        if(this.ele == 0) return this.heap[i];
+        if(this.eleType == 0) return this.heap[i];
         return this.heap[i].key;
+    }
+    setKey(i, key){
+        if(this.eleType == 0) this.heap[i] = key;
+        else this.heap[i].key = key;
+    }
+    setNode(i, ele){
+        this.heap[i] = ele;
+    }
+    getNode(i){
+        return this.heap[i];
     }
     getRoot(){
         if(this.eleNum == 0) return {
