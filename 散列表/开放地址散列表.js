@@ -1,9 +1,9 @@
-var A = (Math.log2(5) - 1)/2, ceil = Math.ceil, floor = Math.floor;
+var A = 0.6180339887, ceil = Math.ceil, floor = Math.floor;
+//(Math.log2(5) - 1)/2
 class hashTable{
     constructor(size, i = 0){
-        this.m = size;
-        this.table = this.createTable(size);
-        this.getHash = this.init(i);
+        this.m = 1 << (getMaxBinaryBit(size) - 1);
+        this.table = this.createTable(this.m);
         this.other = null;
     }
     createTable(size){
@@ -31,6 +31,7 @@ class hashTable{
     deleteEle(i){
         this.table[i] = null;
     }
+    get
     insert(val, ele){
         var hash = this.getHash(val);
         if(this.hasEle(hash)){
@@ -58,45 +59,19 @@ class hashTable{
             return 0;
         }else return this.deleteOtherEle(val);
     }
-    solveConflict(val, ele){
-        this.other = new list(val, ele, this.other);
-    }
-    getOtherEle(val){
-        var node = this.other;
-        while(node != null && node.key != val){
-            node = node.getNext();
-        }
-        if(node != null) return node.ele;
-        else return null;
-    }
-    hasOtherEle(val){
-        if(this.getOtherEle(val) == null) return false;
-        return true;
-    }
-    deleteOtherEle(val){
-        var node = this.other, prev = null;
-        while(node != null && node.key != val){
-            prev = node;
-            node = node.getNext();
-        }
-        if(node != null) {
-            if(prev != null) prev.next = node.next;
-            else this.other = node.next;
-            return 0;
-        }
-        return -1;
-    }
 }
-class list{
-    constructor(key, ele, next){
-        this.key = key;
-        this.ele = ele;
-        this.next = next;
-    }
-    setNext(p){
-        this.next = p;
-    }
-    getNext(){
-        return this.next;
-    }
+function getMaxBinaryBit(num){
+    var b32, b16, b8, b4, b2;
+    num &= ~0;
+    b32 = !!(num >>> 16);
+    num >>>= b32 * 16;
+    b16 = !!(num >>> 8);
+    num >>>= b16 * 8;
+    b8 = !!(num >>> 4);
+    num >>>= b8 * 4;
+    b4 = !!(num >>> 2);
+    num >>>= b4 * 2;
+    b2 = !!(num >>> 1);
+    num >>>= b2 * 1;
+    return b32*16 + b16*8 + b8*4 + b4*2 + b2*1 + num;
 }
