@@ -7,6 +7,7 @@ class hashTable{    //开放地址法最好不要删除元素，如果需要删�
         this.table = this.createTable(this.m);
         this.m2 = floor(random()*this.m);
         this.eleNum = 0;
+        this.deleteSign = -1;
     }
     getSize(){
         return this.m;
@@ -31,10 +32,10 @@ class hashTable{    //开放地址法最好不要删除元素，如果需要删�
         return this.table[i];
     }
     hasEle(i){
-        return this.table[i] != null;
+        return this.table[i] != null && this.table[i] != this.deleteSign;
     }
     deleteEle(i){
-        this.table[i] = null;
+        this.table[i] = this.deleteSign;
     }
     getHash(val, i = 0){
         return (val % this.m + i * ((val % this.m2) | 1)) % this.m;
@@ -55,7 +56,7 @@ class hashTable{    //开放地址法最好不要删除元素，如果需要删�
     }
     has(val){
         var hash = this.getHash(val), i = 1, node = this.getEle(hash);
-        while(node != null && node.key != val) {
+        while(node != null && (node == this.deleteSign || node.key != val)) {
             hash = this.getHash(val, i ++);
             node = this.getEle(hash);
         }
@@ -65,13 +66,24 @@ class hashTable{    //开放地址法最好不要删除元素，如果需要删�
     }
     get(val){
         var hash = this.getHash(val), i = 1, node = this.getEle(hash);
-        while(node != null && node.key != val) {
+        while(node != null && (node == this.deleteSign || node.key != val)) {
             hash = this.getHash(val, i ++);
             node = this.getEle(hash);
         }
         console.log("this is get: ", i, hash);
         if(node == null || node.key != val) return null;
         return node.ele;
+    }
+    delete(val){
+        var hash = this.getHash(val), i = 1, node = this.getEle(hash);
+        while(node != null && node.key != val) {
+            hash = this.getHash(val, i ++);
+            node = this.getEle(hash);
+        }
+        console.log("this is delete: ", i, hash);
+        if(node == null || node.key != val) return -1;
+        this.deleteEle(hash);
+        return 0;
     }
 }
 function getMaxBinaryBit(num){

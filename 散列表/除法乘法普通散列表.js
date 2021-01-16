@@ -55,7 +55,7 @@ class hashTable{
         return ele;
     }
     delete(val){
-        var ele = this.getEle(this.getHash(val));
+        var hash = this.getHash(val), ele = this.getEle(hash);
         if(ele != null) {
             if(ele.key != val) return this.deleteOtherEle(val);
             this.deleteEle(hash);
