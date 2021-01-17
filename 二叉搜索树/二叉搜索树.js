@@ -29,6 +29,20 @@ class bst{//二叉搜索树，左小右大
         }
         this.eleNum ++;
     }
+    recursionInsert(key, ele, node){
+        if(!(node instanceof bstnode)) node = this.root;
+        var temp = new bstnode(key, ele);
+        if(node == null) this.root = temp;
+        else this.subRecursion(node, temp);
+    }
+    subRecursion(a, b){
+        if(a.key > b.key){
+            if(a.left == null) a.left = b;
+            else this.subRecursion(a.left, b);
+        }else if(a.right == null){
+            a.right = b;
+        }else this.subRecursion(a.right, b);
+    }
     delete(node){
         if(!(node instanceof bstnode)) return;
         if(node.left == null) this.transplant(node, node.right);
@@ -38,7 +52,7 @@ class bst{//二叉搜索树，左小右大
             this.transplant(leftMax, leftMax.left);
             node.key = leftMax.key;
             node.ele = leftMax.ele;
-            if(leftMax == node.left) node.left = null;
+            //if(leftMax == node.left) node.left = null;
             // if(leftMax.p != node) {
             //     this.transplant(leftMax, leftMax.left);
             // }
@@ -77,7 +91,6 @@ class bst{//二叉搜索树，左小右大
             }while(pre != node.right)
             return node;
         }
-        
     }
     search(key){
         var node = this.root;
@@ -145,6 +158,11 @@ function test(){
         if(node.key != arr[i]) return false;
         node = bba.successor(node);
     }
+    node = bba.maximum();
+    for(let i = 299; i >= 0; i --){
+        if(node.key != arr[i]) return false;
+        node = bba.predecessor(node);
+    }
     console.log("insert yes");
     for(let i = 0, num, limit = 300, box, temp; i < 30; i ++){
         num = floor(random() * limit);
@@ -165,7 +183,7 @@ function test(){
         limit --;
     }
     arr.sort((a, b)=>a - b);
-    var node = bba.minimum();
+    node = bba.minimum();
     for(let i = 0; i < arr.length; i ++){
         if(node.key != arr[i]){
             console.log("false",node.key, arr[i], i);
@@ -173,6 +191,15 @@ function test(){
             return false;
         }
         node = bba.successor(node);
+    }
+    node = bba.maximum();
+    for(let i = arr.length - 1; i >= 0; i --){
+        if(node.key != arr[i]){
+            console.log("false",node.key, arr[i], i);
+            for(let i = 0; i < 30; i ++) if(arr2[i] == node.key) consolr.log("had deleted", arr2[i])
+            return false;
+        }
+        node = bba.predecessor(node);
     }
     return true;
 }
