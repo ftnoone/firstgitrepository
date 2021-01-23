@@ -6,6 +6,74 @@ var color = {red: 1, black: 0};//1: red, 0: black;
 // 4.如果一个结点是红色的，则它的两个子结点都是黑色的
 // 5.对每个结点，从该结点到其所有后代叶结点的简单路径上，均包含相同数目的黑色结点
 
+function test3(){
+    var num1 = floor(random()*100) + 1, num2 = floor(random()*100) + 1, t1 = new redBlackT(), t2 = new redBlackT();
+    for(let i = 0; i < num1; i ++){
+        t1.insert(floor(random()*100));
+    }
+    for(let i = 0; i < num2; i ++){
+        t2.insert(floor(random()*100) + 100);
+    }
+    var x = new treenode(t1.maximum().key);
+    var tree = RBJoin(t1, x, t2);
+    return tree.check();
+}
+
+function RBJoin(t1, x, t2){//在t1.maximum().key <= x.key <= t2.minimum().key 时可使用
+    if(t1 instanceof redBlackT && t2 instanceof redBlackT && x instanceof treenode && t1.maximum().key <= x.key && x.key <= t2.minimum().key){
+        var temp = new redBlackT();
+        temp.eleNum = t1.eleNum + t2.eleNum + 1;
+        if(t1.blackHeight == t2.blackHeight) {
+            x.left = t1.root;
+            x.right = t2.root;
+            x.left.p = x;
+            x.right.p = x;
+            x.color = color.black;
+            x.p = null;
+            temp.root = x;
+            temp.blackHeight = t1.blackHeight + 1;
+            return temp;
+        }
+        var h, node;
+        temp.blackHeight = t1.blackHeight;
+        x.color = color.red;
+        if(t1.blackHeight > t2.blackHeight){
+            h = t1.blackHeight - t2.blackHeight + 1;
+            node = t1.root;
+            for(let i = 1; i < h; ){
+                node = node.right;
+                if(node.color == color.black) i ++;
+            }
+            node.p.right = x;
+            x.p = node.p;
+            x.left = node;
+            node.p = x;
+            x.right = t2.root;
+            x.right.p = x;
+            t1.insertFixup(x);
+            temp.root = t1.root;
+            temp.blackHeight = t1.blackHeight;
+        }else{
+            h = t2.blackHeight - t1.blackHeight + 1;
+            node = t2.root;
+            for(let i = 1; i < h;){
+                node = node.left;
+                if(node.color == color.black) i ++;
+            }
+            node.p.left = x;
+            x.p = node.p;
+            x.right = node;
+            node.p = x;
+            x.left = t1.root;
+            x.left.p = x;
+            t2.insertFixup(x);
+            temp.root = t2.root;
+            temp.blackHeight = t2.blackHeight;
+        }
+        return temp;
+    }
+}
+
 class redBlackT{
     eleNum = 0;
     blackHeight = 0;
@@ -260,6 +328,7 @@ class redBlackT{
         return node;
     }
     maximum(node){
+        if(arguments.length == 0) node = this.root;
         if(!(node instanceof treenode)) return null;
         while(node.right != null){
             node = node.right;
@@ -267,6 +336,7 @@ class redBlackT{
         return node;
     }
     minimum(node){
+        if(arguments.length == 0) node = this.root;
         if(!(node instanceof treenode)) return null;
         while(node.left != null) node = node.left;
         return node;
@@ -335,7 +405,7 @@ class redBlackT{
                 if(node.p == null) break;
             }
             if(i > this.eleNum) {
-                console.log("in down recursion: ", i, "all node num: ", this.eleNum);
+                console.log("in walk down recursion: ", i, "all node num: ", this.eleNum);
                 return false;
             }
         }
