@@ -1,0 +1,3 @@
+function matrixChainOder(arr){
+
+}
