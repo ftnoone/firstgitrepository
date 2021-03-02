@@ -1,5 +1,5 @@
 var random = Math.random, floor = Math.floor;
-class priorityQue{
+class priorityQue{//没有实现元素类型的改变，只支持基本类型
     constructor(arr, eleNum, type = 0, eleType = 0){
         if(!(arr instanceof Array) || eleNum == undefined || eleNum > arr.length || eleNum < 0)  throw new Error("请输入正确参数");
         this.heap = arr;
