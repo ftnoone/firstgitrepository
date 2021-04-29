@@ -1,4 +1,4 @@
-function getLongestSeq(seq){
+function getLongestSeq(seq){//不需要字串连续，即对于1，5，2，3，为1，2，3
     var i, j, len = seq.length + 1, subarr = new Array(len), result = new Array(len), temp = new Array(len), max, box;
     subarr[0] = 0;
     subarr[1] = 1;//subarr i记录前i个元素的最长单调增序列的长度
