@@ -95,3 +95,9 @@ class hashItem{
         this.ele = ele;
     }
 }
+
+    for(let i = 0, m2 = 7, m = 8, num, val = 13; i < 8; i ++){
+        console.log("+",i * ((val % m2) | 1));
+        num = (val % m + i * ((val % m2) | 1)) % m;
+        console.log("result: ", num);
+    }

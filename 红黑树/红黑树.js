@@ -1,5 +1,5 @@
 var color = {red: 1, black: 0};//1: red, 0: black;
-//红黑树性质：
+// 红黑树性质：
 // 1.每个结点或是红色的，或是黑色的
 // 2.根结点是黑色的
 // 3.每个叶结点是黑色的：指所有的null指向一个黑色的节点（哨兵）
@@ -121,11 +121,6 @@ class redBlackT{
                     temp.right.color = color.black;
                     node.p.color = color.black;
                     node = temp;
-                    if(node.p == null) {//处理根节点的情况
-                        node.color = color.black;
-                        this.blackHeight ++;
-                        break;
-                    }
                     continue;
                 }else if(node == node.p.right){//把情况2转换为情况3
                     node = node.p;
@@ -141,11 +136,6 @@ class redBlackT{
                     temp.left.color = color.black;
                     node.p.color = color.black;
                     node = temp;
-                    if(node.p == null) {
-                        node.color = color.black;
-                        this.blackHeight ++;
-                        break;
-                    }
                     continue;
                 }else if(node == node.p.left){
                     node = node.p;
@@ -157,6 +147,7 @@ class redBlackT{
                 break;
             }
         }
+        this.root.color = color.black;
     }
     leftRotate(node){
         if(node.right == null){

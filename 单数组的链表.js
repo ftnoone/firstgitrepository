@@ -26,7 +26,7 @@ class singleArrList{//以下说的最高位建立在是4个字节32位的整型�
         this.arr = new Array(size * 3);//在free链中 用每三个挨着的数组空间的第一个空间放置下一个节点的索引，在this.free中放第一个free节点的索引，可以通过this.free头一个一个访问
         this.size = size;
         this.free = 0;//free链的头，free链表示所有的空的节点，即可以拿来分配的节点
-        this.freeBit = 32;//原来的compactify要扫描从0整个数组，比较笨，遗留下需要确定是否是free链中的元素的问题（现在直接扫描free链，然后放进最小二叉堆取出最左边，最小 的元素），如果你看到了，可以试着更改
+        this.freeBit = 32;//原来的compactify要扫描从0整个数组，比较笨，遗留下需要确定是否是free链中的元素的问题（现在直接扫描free链，然后放进最小二叉堆取出最左边，最小 的元素），如果你看到了，可以试着更改，因为也很弱智
         this.freeNode = 1 << (this.freeBit - 1);//用来获取free节点和确定是否是free节点，是则设置最高位是1，获取只要把最高位变成0即可
         this.nullNode = this.freeNode + (~this.freeNode);//free链里代表
         this.freeEleNum = size;//free链中free节点的数量，用来在compactify中创建free优先队列

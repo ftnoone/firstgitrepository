@@ -41,7 +41,7 @@ class btree{
             var temp = this.createNode();
             temp.ifLeaf = false;
             this.root = temp;
-            temp.children[0] = node;;
+            temp.children[0] = node;
             this.split(temp, 0);
             node = temp;
             this.height ++;
