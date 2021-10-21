@@ -1,34 +1,143 @@
+function getMaxBinaryBit(num){//返回num二进制形式的左边第一个1的从右往左的次序
+    var b32, b16, b8, b4, b2;
+    num &= ~0;
+    b32 = !!(num >>> 16);
+    num >>>= b32 * 16;
+    b16 = !!(num >>> 8);
+    num >>>= b16 * 8;
+    b8 = !!(num >>> 4);
+    num >>>= b8 * 4;
+    b4 = !!(num >>> 2);
+    num >>>= b4 * 2;
+    b2 = !!(num >>> 1);
+    num >>>= b2 * 1;
+    return b32*16 + b16*8 + b8*4 + b4*2 + b2*1 + num;
+}
+var upHalf = (digit)=>{//返回除二向上取整，参数是全域u的位数，结果是位数的一半向上取整，有high(digit) + low(digit) = digit
+    return digit - (digit>>>1);
+}, 
+downHalf = (digit)=>{//返回除二向下取整，参数是全域u的位数，结果是位数的一半向下取整
+    return digit>>>1;
+};
 class vEBTree{
     constructor(u){
-        this.n = getMaxBinaryBit(u);//默认为无符号整数，32位
-        this.root = null;
+        this.n = getMaxBinaryBit(u);//默认为无符号整数，32位，这里取最高位的1的位数
+        this.root = new vEBTreeNode(this.n);//创建veb树时传入全域的总位数，用前半位数分配cluster和summary，后半位数递归创建veb树
+        this.data = null;
     }
-    buildTree(){
-        let temp, digit = this.n;
-        this.root = new vEBTreeNode(high(digit), low(digit));
-        while(digit != 1){
+    createDataArr(){
+        this.data = new Array(1<<this.n);
+    }
+    minimum(){
+        return this.#minimum(this.root);
+    }
+    maximum(){
+        return this.#maximum(this.root);
+    }
+    #minimum(v){
+        return v.min;
+    }
+    #maximum(v){
+        return v.max;
+    }
+    #high(key, lowDigit){//取key二进制下的高半位段，向上取整
+        return key >>> lowDigit;
+    }
+    #low(key, lowDigit){//取key的二进制下的低半位段，向下取整
+        return key - ((key>>>lowDigit)<<lowDigit);
+    }
+    #index(high, low, lowDigit){//将高半位段和低半位段拼接
+        return (high << lowDigit) + low;
+    }
+    member(key){
+        return this.#member(this.root, key);
+    }
+    #member(v, key){
+        if(key == v.min || key == v.max){
+            return true;
+        }else if(v.u == 2) return false;
+        return this.#member(v.cluster[this.#high(key, v.lowDigit)], this.#low(key, v.lowDigit));
+    }
+    successor(key){
+        return this.#successor(this.root, key);
+    }
+    #successor(v, key){
+        if(v.u == 2){
+            if(key == 0 && v.max == 1) return 1;
+            else return null;
+        }else if(v.min != null && v.min > key) return v.min;
+        let high = this.#high(key, v.lowDigit), maxlow = v.cluster[high].max;
+        if(maxlow != null && maxlow > this.#low(key, v.lowDigit)) return this.#index(high, this.#successor(v.cluster[high], this.#low(key, v.lowDigit)), v.lowDigit);
+        else {
+            let succCluster = this.#successor(v.summary, high);
+            if(succCluster == null) return null;
+            else return this.#index(succCluster, v.cluster[succCluster].min, v.lowDigit);
         }
     }
-    
+    predecessor(key){
+        return this.#predecessor(this.root, key);
+    }
+    #predecessor(v, key){
+        if(v.u == 2){
+            if(key == 1 && v.min == 0) return 0;
+            else return null;
+        }else if(v.max != null && v.max < key) return v.max;
+        let high = this.#high(key, v.lowDigit), minlow = v.cluster[high].min;
+        if(minlow != null && minlow < this.#low(key, v.lowDigit)) return this.#index(high, this.#predecessor(v.cluster[high], this.#low(key, v.lowDigit)), v.lowDigit);
+        else {
+            let preCluster = this.#predecessor(v.summary, high);
+            if(preCluster == null) {
+                if(v.min != null && v.min < key) return v.min;
+                else return null;
+            }
+            else return this.#index(preCluster, v.cluster[preCluster].max, v.lowDigit);
+        }
+    }
+    #emptyInsert(v, key){
+        v.min = key;
+        v.max = key;
+    }
+    insert(key){
+        this.#insert(this.root, key);
+    }
+    #insert(v, key){
+        if(v.min == null) this.#emptyInsert(v, key);
+        else {
+            if(key < v.min) [v.min, key] = [key, v.min];
+            if(v.u > 2){
+                let high = this.#high(key, v.lowDigit), low = this.#low(key, v.lowDigit);
+                if(v.cluster[high].min == null){
+                    this.#insert(v.summary, high);
+                    this.#emptyInsert(v.cluster[high], low);
+                }else this.#insert(v.cluster[high], low);
+            }
+            if(key > v.max) v.max = key;
+        }
+    }
+    #delete(v, key){
+        if(v.min == v.max && v.min == key) {
+            v.min = null;
+            v.max = null;
+        }else if(v.u == 2){
+            if(key == 0) v.min = 1;
+            else v.max = 0;
+        }
+    }
 }
-var high = (digit)=>{//参数是全域u的位数
-        return digit - (digit>>>1);
-    }, 
-    low = (digit)=>{
-        return digit>>>1;
-    };
+
 class vEBTreeNode{
-    constructor(high, low){
-        if(low > 0) {
-            this.summary = null;
-            this.cluster = new Array(clusterSize);
-        }
-        this.u = 1<<(n + clusterSize);
+    constructor(n){//参数high是u域的高
+        let highDigit = upHalf(n), lowDigit = downHalf(n);
+        this.lowDigit = lowDigit;
+        this.u = 1<<n;//将位数转换为全域
         this.min = null;
         this.max = null;
-    }
-    createCluster(){
-
+        if(lowDigit > 0) {//还有至少一位低位数代表可以继续递归创建veb树
+            let limit = 1<<highDigit;//这里是把位数变成所需的cluster结构分配数量
+            this.summary = new vEBTreeNode(highDigit);
+            this.cluster = new Array(limit);
+            for(let i = 0; i < limit; i ++) this.cluster[i] = new vEBTreeNode(lowDigit);
+        }
     }
 }
 class listNode{
@@ -39,7 +148,7 @@ class listNode{
     }
 }
 class doubleLinkedList{//注意不可以对已经删除的节点再删除，和对插入的节点再插入，因为没有做节点是否在链表的判断
-    constructor(){
+    constructor(key){
         this.door = null;//链表入口
         //注意链表的结点需要有left和right属性，showString函数需要key值
     }
@@ -114,18 +223,34 @@ class doubleLinkedList{//注意不可以对已经删除的节点再删除，和�
         console.log(str);
     }
 }
-function getMaxBinaryBit(num){//返回num二进制形式的左边第一个1的从右往左的次序
-    var b32, b16, b8, b4, b2;
-    num &= ~0;
-    b32 = !!(num >>> 16);
-    num >>>= b32 * 16;
-    b16 = !!(num >>> 8);
-    num >>>= b16 * 8;
-    b8 = !!(num >>> 4);
-    num >>>= b8 * 4;
-    b4 = !!(num >>> 2);
-    num >>>= b4 * 2;
-    b2 = !!(num >>> 1);
-    num >>>= b2 * 1;
-    return b32*16 + b16*8 + b8*4 + b4*2 + b2*1 + num;
+var {random, floor} = Math;
+var arr, veb;
+function test1(){
+    let n = floor(random()*100), i, key, j;
+    arr = new Array(n);
+    veb = new vEBTree(n);
+    for(i = 0, j = 0; i < n; i++){
+        key = floor(random()*n);
+        if(!veb.member(key)){
+            arr[i] = key;
+            veb.insert(key);
+            j ++;
+        }
+    }
+    arr.sort((a, b)=>a-b);
+    for(i = 0; i < j - 1; i ++){
+        if(!veb.member(arr[i]) || !veb.member(arr[i + 1])) {
+            console.log(`member:${i} ${veb.member(arr[i])}, ${veb.member(arr[i + 1])}`);
+            return false;
+        }
+        if(veb.successor(arr[i]) != arr[i + 1]) {
+            console.log(`sucessor:${i} ${veb.successor(arr[i])}, ${arr[i + 1]}`);
+            return false;
+        }
+        if(veb.predecessor(arr[i + 1] != arr[i])) {
+            console.log(`predecessor:${i + 1} ${veb.predecessor(arr[i + 1])}, ${arr[i]}`);
+            return false;
+        }
+    }
+    return true;
 }
