@@ -61,23 +61,24 @@ class vEBTree{
     successor(key){
         return this.#successor(this.root, key);
     }
-    #successor(v, key){
+    #successor(v, key){//如果是基础情形，在key值是0时，有值1存在，说明存在后继节点，返回值1
         if(v.u == 2){
             if(key == 0 && v.max == 1) return 1;
             else return null;
-        }else if(v.min != null && v.min > key) return v.min;
+        }else if(v.min != null && v.min > key) return v.min;//如果小于v树的最小节点，返回最小节点
         let high = this.#high(key, v.lowDigit), maxlow = v.cluster[high].max;
+        //否则如果key的低位小于key所在cluster的v树中最大节点，说明后继节点在cluster中，在key所在cluste中递归寻找
         if(maxlow != null && maxlow > this.#low(key, v.lowDigit)) return this.#index(high, this.#successor(v.cluster[high], this.#low(key, v.lowDigit)), v.lowDigit);
-        else {
+        else {//否则去key所在cluster的后继cluster中寻找
             let succCluster = this.#successor(v.summary, high);
-            if(succCluster == null) return null;
+            if(succCluster == null) return null;//如果没有后继cluster，返回空值
             else return this.#index(succCluster, v.cluster[succCluster].min, v.lowDigit);
         }
     }
     predecessor(key){
         return this.#predecessor(this.root, key);
     }
-    #predecessor(v, key){
+    #predecessor(v, key){//和successor对称，多了对v树min节点的处理，因为v树结构中是v的min值不包含在cluster中，而max包含在cluster中，所以当在cluster中找不到后继节点，则前驱节点有可能是min
         if(v.u == 2){
             if(key == 1 && v.min == 0) return 0;
             else return null;
@@ -93,7 +94,7 @@ class vEBTree{
             else return this.#index(preCluster, v.cluster[preCluster].max, v.lowDigit);
         }
     }
-    #emptyInsert(v, key){
+    #emptyInsert(v, key){//对空的v树插入一个节点只改变min和max值，这里当v树中只含有一个节点时，max值不进行递归插入
         v.min = key;
         v.max = key;
     }
@@ -101,27 +102,62 @@ class vEBTree{
         this.#insert(this.root, key);
     }
     #insert(v, key){
-        if(v.min == null) this.#emptyInsert(v, key);
-        else {
-            if(key < v.min) [v.min, key] = [key, v.min];
-            if(v.u > 2){
+        if(v.min == null) this.#emptyInsert(v, key);//对空v树插入
+        else {//非空v树插入
+            if(key < v.min) [v.min, key] = [key, v.min];//如果小于v树中min值，将key值赋予min，对原min值插入cluster子v树中，因为min节点不包含在cluster中
+            if(v.u > 2){//对非基础情形插入
                 let high = this.#high(key, v.lowDigit), low = this.#low(key, v.lowDigit);
-                if(v.cluster[high].min == null){
+                if(v.cluster[high].min == null){//如果key值所在cluster为空，则需要对summary进行标记
                     this.#insert(v.summary, high);
                     this.#emptyInsert(v.cluster[high], low);
-                }else this.#insert(v.cluster[high], low);
+                }else this.#insert(v.cluster[high], low);//递归插入
             }
-            if(key > v.max) v.max = key;
+            //非基础情形插入后，看max是否大于v树max，并换值，对应与max同样存在于cluster的性质
+            if(key > v.max) v.max = key;//如果是基础情形要么01，00，11，null null，其中空树已经在上方情形中，而插入1时，只有00情形需要改变值，对应与此处的if情形，对于插入0，只有11需要改变值，对应于上方第二个if换值
         }
     }
     #delete(v, key){
-        if(v.min == v.max && v.min == key) {
+        if(v.min == v.max && v.min == key) {//minmax相等情形为空树只含有一个节点，赋值为空即可
             v.min = null;
             v.max = null;
-        }else if(v.u == 2){
+            return;
+        }else if(v.u == 2){//基础情形下，01，且key为1，变为00，为0，变为11，其它情形在上方if中
             if(key == 0) v.min = 1;
             else v.max = 0;
+            return;
+        }else if(v.min == key){//如果包含一个以上节点且不是基础情形，将cluster中最小节点放到min处，key赋值为cluster最小节点，下方继续对key值删除，保证cluster不包含min值的性质
+            let firstCluster = this.#minimum(v.summary);
+            key = this.#index(firstCluster, v.cluster[firstCluster].min, v.lowDigit);
+            v.min = key;
         }
+        let high = this.#high(key, v.lowDigit);
+        this.#delete(v.cluster[high], this.#low(key, v.lowDigit));//对key值递归删除
+        if(v.cluster[high].min == null){//如果key值所在cluster空了，对summary解除标记
+            this.#delete(v.summary, high);
+            if(v.max == key){//如果递归删除了max，对v树所在max也进行删除，并赋值cluster中最大节点
+                let summaryMax = this.#maximum(v.summary);
+                if(summaryMax == null){//如果cluster全空了，max值为min值
+                    v.max = v.min;
+                }else v.max = this.#index(summaryMax, this.#maximum(v.cluster[summaryMax]), v.lowDigit);//没空就赋值
+            }
+        }else if(key == v.max) v.max = this.#index(high, this.#maximum(v.cluster[high]), v.lowDigit);//如果key值所在cluster不空，且删除的是max，将v树max赋值为keycluster最大值
+    }
+    delete(key){
+        this.#delete(this.root, key);
+    }
+    check(){//从最小节点遍历后继节点，放入数组，再进行前驱遍历，如果一样说明没问题
+        var arr = new Array, key = this.minimum();
+        arr.push(key);
+        while((key = this.successor(key)) != null){
+            arr.push(key);
+        }
+        for(let i = 0; i < arr.length - 1; i ++){
+            if(this.predecessor(arr[i + 1] != arr[i])) {
+                console.log(`predecessor:${i + 1} ${this.predecessor(arr[i + 1])}, ${arr[i]}`);
+                return false;
+            }
+        }
+        return true;
     }
 }
 
@@ -225,16 +261,54 @@ class doubleLinkedList{//注意不可以对已经删除的节点再删除，和�
 }
 var {random, floor} = Math;
 var arr, veb;
-function test1(){
+function test1(){//测试插入，后继前驱。
     let n = floor(random()*100), i, key, j;
     arr = new Array(n);
     veb = new vEBTree(n);
     for(i = 0, j = 0; i < n; i++){
         key = floor(random()*n);
         if(!veb.member(key)){
-            arr[i] = key;
+            arr[j] = key;
             veb.insert(key);
             j ++;
+        }
+    }
+    arr.sort((a, b)=>a-b);
+    for(i = 0; i < j - 1; i ++){
+        if(!veb.member(arr[i]) || !veb.member(arr[i + 1])) {
+            console.log(`member:${i} ${veb.member(arr[i])}, ${veb.member(arr[i + 1])}`);
+            return false;
+        }
+        if(veb.successor(arr[i]) != arr[i + 1]) {
+            console.log(`sucessor:${i} ${veb.successor(arr[i])}, ${arr[i + 1]}`);
+            return false;
+        }
+        if(veb.predecessor(arr[i + 1] != arr[i])) {
+            console.log(`predecessor:${i + 1} ${veb.predecessor(arr[i + 1])}, ${arr[i]}`);
+            return false;
+        }
+    }
+    return true;
+}
+function test2(){//测试删除
+    let n = floor(random()*160) + 2, i, key, j;
+    arr = new Array(n);
+    veb = new vEBTree(n);
+    for(i = 0, j = 0; i < n; i++){
+        key = floor(random()*n);
+        if(!veb.member(key)){
+            arr[j] = key;
+            veb.insert(key);
+            j ++;
+        }
+    }
+    for(i = 0; i < n; i ++){
+        key = floor(random()*j);
+        if(veb.member(arr[key])){
+            console.log(`member:${key} ${veb.member(arr[key])}`);
+            veb.delete(arr[key]);
+            arr[key] = Infinity;
+            j --;
         }
     }
     arr.sort((a, b)=>a-b);
