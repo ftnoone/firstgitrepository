@@ -1,4 +1,4 @@
-function BFS(G, s){
+function BFS(G, s){//基于队列存储节点信息
     let arr = new Array(G.n), q = new queue(G.n), i;
     for(i = 0; i < G.n; i ++){
         arr[i] = {
