@@ -27,7 +27,7 @@ class queue{
     isEmpty(){
         return this.head == this.tail;
     }
-    toString(){
+    showString(){
         var str = "[", fun;
         if(this.head >= this.tail){
             fun = (i)=>{
