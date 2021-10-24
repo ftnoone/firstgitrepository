@@ -1,36 +1,135 @@
-function DFS(G){
-    let arr = new Array(G.n), i, time = 0, iterator, key;
+function print(arr){//打印dfs返回的数组结果
+    var s = new stack(arr.length), str = "";
+    for(let i = 0, d, iterator, arrEle, indent, indentStep, ifLine = false; i < arr.length; i ++){
+        //d表示层数，每次向下降一层加一，indent表示下一次添加字符需要几个\t
+        if(arr[i].p == null){
+            d = 0;
+            indent = 1;
+            if(ifLine) str += "\n";//是否换行
+            str += `arr[${i}]: ` + arr[i].key;
+            iterator = arr[i].child.iterator();
+            ifLine = false;//换行了下一行不换
+            do{
+                while(iterator.hasNext()){
+                    d ++;
+                    arrEle = iterator.next();
+                    if(ifLine) str += "\n";//换行
+                    for(indentStep = 0; indentStep < indent; indentStep ++) str += "\t";//保持输出对齐
+                    str += arrEle.key;
+                    s.push(iterator);
+                    iterator = arrEle.child.iterator();
+                    indent = 1;//重置缩进的制表符
+                    ifLine = false;//重置换行
+                }
+                ifLine = true;//开始回溯，所以换行输出结果
+                indent = d + 1;//arr[i]占一个制表符，所以换行后的制表符多一
+                d --;
+                if(s.isEmpty()) break;
+                else iterator = s.pop();
+            }while(true)
+        }
+    }
+    console.log(str);
+}
+let time, key, arr;
+function dfsVisit(G, u){
+    time ++;
+    arr[u].d = time;
+    arr[u].color = 1;
+    let iterator = G.iterator(u);
+    while(iterator.hasNext()){
+        key = iterator.next();
+        if(arr[key].color == 0){
+            arr[key].p = arr[u];
+            arr[u].child.insert(arr[key]);
+            dfsVisit(G, key);
+        }
+    }
+    arr[u].color = 2;
+    time ++;
+    arr[u].f = time;
+}
+function DFS(G){//递归dfs，未测试
+    let i;
+    time = 0;
+    arr = new Array(G.n);
     for(i = 0; i < G.n; i ++){
         arr[i] = {
-            key: i,
+            p: null,
             d: 0,
             f: 0,
             color: 0,//0代表未遍历，1代表正在对其子节点进行遍历，2代表对此节点以及其子节点完成遍历
-            p: null
+            key: testInfo[i],
+            child: new doubleLinkedList()
         };
     }
-    function visit(u){
-        time ++;
-        arr[u].d = time;
-        arr[u].color = 1;
-        iterator = G.iterator(u);
-        while(iterator.hasNext()){
-            key = iterator.next();
-            if(arr[key].color == 0){
-                arr[key].p = arr[u];
-                visit(key);
-            }
-        }
-        arr[u].color = 2;
-        time ++;
-        arr[u].f = time;
-    }
-    arr[s].color = 1;
-    arr[s].d = 0;
     for(let a of G){
-        if(arr[a] == 0) visit(a);
+        if(arr[a].color == 0) dfsVisit(G, a);
     }
     return arr;
+}
+function stackDFS(G, info){//栈dfs，未测试
+    let arr = new Array(G.n), i, time = 0, iterator, parent, child, s = new stack(G.n);
+    for(i = 0; i < G.n; i ++){
+        arr[i] = new arrNode(info[i], i);
+    }
+    for(let u of G){
+        if(arr[u].color == 0) {
+            iterator = G.iterator(u);
+            time ++;
+            arr[u].d = time;
+            arr[u].color = 1;
+            parent = u;
+            while(true){
+                while(iterator.hasNext()){
+                    child = iterator.next();
+                    if(arr[child].color == 0){
+                        s.push(iterator);
+                        time ++;
+                        arr[child].d = time;
+                        arr[child].color = 1;
+                        arr[child].p = arr[parent];
+                        arr[parent].child.insert(arr[child]);
+                        iterator = G.iterator(child);
+                        parent = child;
+                        continue;
+                    }
+                }
+                arr[parent].color = 2;
+                time ++;
+                arr[parent].f = time;
+                if(!s.isEmpty()){
+                    iterator = s.pop();
+                    parent = iterator.key;
+                }else break;
+            }
+        }
+    }
+    return arr;
+}
+class stack{
+    constructor(size){
+        if(size == undefined || size <= 0) throw new Error("请输入正确的参数");
+        this.s = new Array(size);
+        this.n = size;
+        this.top = 0;
+    }
+    pop(){
+        if(this.isEmpty()) return null;
+        else return this.s[-- this.top];
+    }
+    push(element){
+        if(!this.isFull()){
+            this.s[this.top ++] = element;
+            return true;
+        }else return false;
+    }
+    isEmpty(){
+        return this.top == 0;
+    }
+    isFull(){
+        return this.top == this.n;
+    }
 }
 class linkedGraph{//无向简单图
     constructor(n){
@@ -67,31 +166,36 @@ class linkedGraph{//无向简单图
         }
     }
     showString(){
-        for(let i = 0, len = this.n; i < len; i ++){
-            console.log(`e[${i}]`);
-            arr[i].showString();
-        }
+        console.log(this.beString());
     }
-    iterator(a){//下层是双循环链表，对上提供对顶点a的邻接链表的迭代器
+    beString(){
+        let str = "";
+        for(let i = 0, len = this.n; i < len; i ++){
+            str += `e[${i}]: ` + this.e[i].beString() + "\n";
+        }
+        return str;
+    }
+    iterator(a){//下层是双循环链表，对上提供对顶点a的邻接链表的迭代器，返回值是节点索引
         if(!this.check(a)) return null;
-        let adj = this.e[a], door = adj.door, node = door, key, hasN = true;
+        let adj = this.e[a], door = adj.door, node = door, data, hasN = true;
         if(door == null) hasN = false;
         return {
             next(){
-                key = node.key;
+                data = node.data;
                 node = adj.successorNode(node);
                 hasN = node != door;
-                return key;
+                return data;
             },
             hasNext(){
                 return hasN;
-            }
+            },
+            key: a
         }
     }
 }
 class listNode{
-    constructor(key){
-        this.key = key;
+    constructor(data){
+        this.data = data;
         this.left = null;
         this.right = null;
     }
@@ -101,38 +205,41 @@ class doubleLinkedList{//注意不可以对已经删除的节点再删除，和�
         this.door = null;//链表入口
         //注意链表的结点需要有left和right属性，showString函数需要key值
     }
+    isEmpty(){
+        return this.door == null;
+    }
     successorNode(node){
         return node.right;
     }
-    createNode(key){
-        return new listNode(key);
+    createNode(data){
+        return new listNode(data);
     }
-    member(key){
+    member(data){
         if(this.door == null) return false;
         for(let a of this){
-            if(a.key == key) return true;
+            if(a.data == data) return true;
         }
         return false;
     }
-    insert(key){//往door的left处插入
-        let node = this.createNode(key);
+    insert(data){//往door的left处插入
+        let node = this.createNode(data);
         if(this.door == null) {
             this.door = node;
             node.left = node;
             node.right = node;
         }else{
-            this.#nodeInsert(node, this.door);
+            this.nodeInsert(node, this.door);
         }
     }
-    delete(key){
+    delete(data){
         for(let a of this){
-            if(a.key == key){
-                this.#nodeDelete(a);
+            if(a.data == data){
+                this.nodeDelete(a);
                 return ;
             }
         }
     }
-    #nodeDelete(node){
+    nodeDelete(node){
         let left = node.left, right = node.right;
         if(node == right) {
             this.door = null;
@@ -143,7 +250,7 @@ class doubleLinkedList{//注意不可以对已经删除的节点再删除，和�
         right.left = left;
         return node;
     }
-    #nodeInsert(x, y){//x插入y左边
+    nodeInsert(x, y){//x插入y左边
         x.left = y.left;
         x.right = y;
         y.left.right = x;
@@ -176,16 +283,110 @@ class doubleLinkedList{//注意不可以对已经删除的节点再删除，和�
             }
         };
     }
+    iterator(){
+        let door = this.door, node = door, ifEnd = this.isEmpty(), val;
+        return {
+            next() {
+                val = node.data;
+                if(node.right == door) ifEnd = true;
+                node = node.right;
+                return val;
+            },
+            hasNext(){
+                return !ifEnd;
+            }
+        };
+    }
     showString(){//将循环链表的键值用字符串输出到控制台
-        if(this.door == null) {
+        console.log(this.beString());
+    }
+    beString(){
+        if(this.isEmpty()) {
             console.log("null");
             return;
         }
         let str = '';
         for(let a of this){
-            str += a.key + " ⇋ ";
+            str += a.data + " ⇋ ";
         }
-        console.log(str);
+        return str;
     }
 }
 var {random, floor} = Math;
+function topologicalOrder(){//拓扑排序，深度优先搜索，然后将每颗深度优先树的根节点进行排序，将完成时间最晚的放在前面
+    var a = new linkedGraph(9);//书上一个有向无环图的输入
+    a.insertE(0,4);
+    a.insertE(4,5);
+    a.insertE(0,2);
+    a.insertE(2,5);
+    a.insertE(3,6);
+    a.insertE(6,2);
+    a.insertE(3,7);
+    a.insertE(6,7);
+    a.insertE(8,7);
+    var testInfo = ["村衣", "手表", "腰带", "内裤", "领带", "夹克", "裤子", "鞋", "袜子"];
+    var arr = stackDFS(a, testInfo);
+    print(arr);
+    arr.sort((a, b)=>{
+        if(a.p == null && b.p == null) return b.f - a.f;
+        else return 0;
+    });
+    print(arr);
+}
+class arrNode{
+    constructor(key, index){
+        this.p = null;
+        this.d = 0;
+        this.f = 0;
+        this.color = 0;//0代表未遍历，1代表正在对其子节点进行遍历，2代表对此节点以及其子节点完成遍历
+        this.key = key;
+        this.child = new doubleLinkedList();
+        this.index = index;
+    }
+}
+
+function scc(){//strongly connected component，强连通分量，此处将有向图分解为强连通分量
+    let a = new linkedGraph(8);//书上一个有向图的输入
+    a.insertE(0,1);
+    a.insertE(1,2);
+    a.insertE(2,1);
+    a.insertE(1,3);
+    a.insertE(3,3);
+    a.insertE(0,4);
+    //a.insertE(4,0);
+    a.insertE(5,6);
+    a.insertE(6,7);
+    a.insertE(7,5);
+    a.insertE(4,3);
+    a.insertE(5,2);
+    a.insertE(6,2);
+    a.insertE(5,0);
+    let info = ["c", "g", "f", "h", "d", "b", "e", "a"];
+    a.showString();
+    let at = transpose(a);
+    at.showString();
+    let result = stackDFS(a, info), i;
+    print(result);
+    console.log(result);
+    result.sort((a, b)=>b.f - a.f);
+    time = 0;//全局变量初始化
+    arr = new Array(at.n);//同上
+    for(i = 0; i < at.n; i ++){
+        arr[i] = new arrNode(info[i], i);
+    }
+    for(let a of result){
+        if(arr[a.index].color == 0) dfsVisit(at, a.index);
+    }
+}
+scc();
+function transpose(G){
+    let iterator, key, Gt = new linkedGraph(G.n);
+    for(let a of G){
+        iterator = G.iterator(a);
+        while(iterator.hasNext()){
+            key = iterator.next();
+            Gt.insertE(key, a);
+        }
+    }
+    return Gt;
+}

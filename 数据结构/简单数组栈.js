@@ -6,14 +6,14 @@ class stack{
         this.top = 0;
     }
     pop(){
-        if(this.isEmpty()) throw new Error("空栈");
+        if(this.isEmpty()) return null;
         else return this.s[-- this.top];
     }
     push(element){
         if(!this.isFull()){
-            this.s[this.top] = element;
-            this.top ++;
-        }else throw new Error("已满");
+            this.s[this.top ++] = element;
+            return true;
+        }else return false;
     }
     isEmpty(){
         return this.top == 0;
