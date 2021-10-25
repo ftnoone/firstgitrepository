@@ -333,7 +333,7 @@ function topologicalOrder(){//拓扑排序，深度优先搜索，然后将每�
     });
     print(arr);
 }
-class arrNode{
+class arrNode{//深度优先遍历的结果数组元素
     constructor(key, index){
         this.p = null;
         this.d = 0;
@@ -345,7 +345,7 @@ class arrNode{
     }
 }
 
-function scc(){//strongly connected component，强连通分量，此处将有向图分解为强连通分量
+function scc(){//strongly connected component，强连通分量，函数将有向图分解为强连通分量
     let a = new linkedGraph(8);//书上一个有向图的输入
     a.insertE(0,1);
     a.insertE(1,2);
@@ -353,7 +353,7 @@ function scc(){//strongly connected component，强连通分量，此处将有�
     a.insertE(1,3);
     a.insertE(3,3);
     a.insertE(0,4);
-    //a.insertE(4,0);
+    a.insertE(4,0);
     a.insertE(5,6);
     a.insertE(6,7);
     a.insertE(7,5);
@@ -366,8 +366,6 @@ function scc(){//strongly connected component，强连通分量，此处将有�
     let at = transpose(a);
     at.showString();
     let result = stackDFS(a, info), i;
-    print(result);
-    console.log(result);
     result.sort((a, b)=>b.f - a.f);
     time = 0;//全局变量初始化
     arr = new Array(at.n);//同上
@@ -377,9 +375,10 @@ function scc(){//strongly connected component，强连通分量，此处将有�
     for(let a of result){
         if(arr[a.index].color == 0) dfsVisit(at, a.index);
     }
+    print(arr);
 }
 scc();
-function transpose(G){
+function transpose(G){//获得转置图，G中有边(u, v)，则在转置图Gt中存在边(v, u)
     let iterator, key, Gt = new linkedGraph(G.n);
     for(let a of G){
         iterator = G.iterator(a);
