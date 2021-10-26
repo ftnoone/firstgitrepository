@@ -1,4 +1,4 @@
-function print(arr){//打印dfs返回的数组结果
+function print(arr){//打印dfs返回的数组结果，打印的
     var s = new stack(arr.length), str = "";
     for(let i = 0, d, iterator, arrEle, indent, indentStep, ifLine = false; i < arr.length; i ++){
         //d表示层数，每次向下降一层加一，indent表示下一次添加字符需要几个\t
@@ -7,7 +7,7 @@ function print(arr){//打印dfs返回的数组结果
             indent = 1;
             if(ifLine) str += "\n";//是否换行
             str += `arr[${i}]: ` + arr[i].key;
-            iterator = arr[i].child.iterator();
+            iterator = arr[i].child.iterator();//子节点由双循环队列组成
             ifLine = false;//换行了下一行不换
             do{
                 while(iterator.hasNext()){
@@ -49,7 +49,7 @@ function dfsVisit(G, u){
     time ++;
     arr[u].f = time;
 }
-function DFS(G){//递归dfs，未测试
+function DFS(G){//递归dfs
     let i;
     time = 0;
     arr = new Array(G.n);
@@ -68,10 +68,10 @@ function DFS(G){//递归dfs，未测试
     }
     return arr;
 }
-function stackDFS(G, info){//栈dfs，未测试
+function stackDFS(G){//栈dfs
     let arr = new Array(G.n), i, time = 0, iterator, parent, child, s = new stack(G.n);
     for(i = 0; i < G.n; i ++){
-        arr[i] = new arrNode(info[i], i);
+        arr[i] = new arrNode(G.getInfo(i), i);
     }
     for(let u of G){
         if(arr[u].color == 0) {
@@ -131,11 +131,22 @@ class stack{
         return this.top == this.n;
     }
 }
-class linkedGraph{//无向简单图
-    constructor(n){
+class linkedGraph{//有向图
+    constructor(n, info){
         this.e = new Array(n);//边集
         for(let i = 0; i < n; i ++) this.e[i] = new doubleLinkedList();
         this.n = n;//顶点数
+        this.info = null;
+        this.changeInfo(info);
+    }
+    changeInfo(info){
+        if(info instanceof Array){
+            if(info.length >= this.n) this.info = info;
+        }
+    }
+    getInfo(a){
+        if(this.info == null) return null;
+        else return this.info[a];
     }
     [Symbol.iterator]() {//对图的节点进行遍历
         let i = 0, n = this.n;
@@ -171,7 +182,7 @@ class linkedGraph{//无向简单图
     beString(){
         let str = "";
         for(let i = 0, len = this.n; i < len; i ++){
-            str += `e[${i}]: ` + this.e[i].beString() + "\n";
+            str += `[${i}] ${this.getInfo(i)}: ` + this.e[i].beString() + "\n";
         }
         return str;
     }
@@ -346,7 +357,8 @@ class arrNode{//深度优先遍历的结果数组元素
 }
 
 function scc(){//strongly connected component，强连通分量，函数将有向图分解为强连通分量
-    let a = new linkedGraph(8);//书上一个有向图的输入
+    let info = ["c", "g", "f", "h", "d", "b", "e", "a"];
+    let a = new linkedGraph(8, info);//书上一个有向图的输入
     a.insertE(0,1);
     a.insertE(1,2);
     a.insertE(2,1);
@@ -361,11 +373,10 @@ function scc(){//strongly connected component，强连通分量，函数将有�
     a.insertE(5,2);
     a.insertE(6,2);
     a.insertE(5,0);
-    let info = ["c", "g", "f", "h", "d", "b", "e", "a"];
     a.showString();
     let at = transpose(a);
     at.showString();
-    let result = stackDFS(a, info), i;
+    let result = stackDFS(a), i;
     result.sort((a, b)=>b.f - a.f);
     time = 0;//全局变量初始化
     arr = new Array(at.n);//同上
