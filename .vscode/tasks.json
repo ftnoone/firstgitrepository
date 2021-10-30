@@ -1,0 +1,24 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "shell",
+			"command": "tsc",
+			"label": "tsc diy",
+			"args": [
+				"-m",
+				"es6",
+				"${file}"
+			]
+		},
+		{
+			"type": "typescript",
+			"tsconfig": "tsconfig.json",
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build",
+			"label": "tsc: 构建 - tsconfig.json"
+		}
+	]
+}
