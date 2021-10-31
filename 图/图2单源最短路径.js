@@ -80,20 +80,14 @@ class linkedForestNode{//森林节点
         this.p = null;
         this.key = key;
         this.data = data;
-        this.child = new doubleLinkedList();//孩子链表，放是linkedForestNode
+        this.childList = new doubleLinkedList();//孩子链表，放是linkedForestNode
     }
     insert(node){//插入森林节点
-        if(node instanceof linkedForestNode){
-            this.child.insert(node);
-            node.p = this;
-            return true;
-        }
-        return false;
+        this.childList.insert(node);
+        node.p = this;
     }
     setP(node){
-        if(node instanceof linkedForestNode){
-            this.p = node;
-        }
+        this.p = node;
     }
 }
 class linkedForest{//森林，有向图
@@ -107,9 +101,6 @@ class linkedForest{//森林，有向图
         return this.arr;
     }
     setForest(arr){//设置内部的linkedforestnode数组
-        for(let a of arr){
-            if(!(a instanceof linkedForestNode)) return false;
-        }
         this.arr = arr;
         return true;
     }
@@ -117,16 +108,16 @@ class linkedForest{//森林，有向图
         let p;
         for(let a of this.arr){
             if((p = a.p) != null){
-                if(!(p.child.member(a))){
+                if(!(p.childList.member(a))){
                     p.insert(a);
                 }
             }
         }
     }
     showString(){
-        console.log(this.beString());
+        console.log(this.customString((node)=>node.key));
     }
-    beString(){//森林深度优先遍历
+    customString(fun){//森林深度优先遍历
         let arr = this.arr, s = new stack(arr.length), str = "", d, iterator, forestNode, indent, indentStep, ifLine = false;
         for(let i = 0; i < arr.length; i ++){
             //d表示层数，每次向下降一层加一，indent表示下一次添加字符需要几个\t
@@ -134,8 +125,8 @@ class linkedForest{//森林，有向图
                 d = 0;
                 indent = 1;
                 if(ifLine) str += "\n";//是否换行
-                str += `t[${i}]: \t` + arr[i].key;
-                iterator = arr[i].child.valIterator();//子节点由双循环队列组成
+                str += `t[${i}]: \t` + fun(arr[i]);
+                iterator = arr[i].childList.valIterator();//子节点由双循环队列组成
                 ifLine = false;//换行了下一行不换
                 do{
                     while(iterator.hasNext()){
@@ -143,9 +134,9 @@ class linkedForest{//森林，有向图
                         forestNode = iterator.next();
                         if(ifLine) str += "\n";//换行
                         for(indentStep = 0; indentStep < indent; indentStep ++) str += "\t";//保持输出对齐
-                        str += forestNode.key;
+                        str += fun(forestNode);
                         s.push(iterator);
-                        iterator = forestNode.child.valIterator();
+                        iterator = forestNode.childList.valIterator();
                         indent = 1;//重置缩进的制表符
                         ifLine = false;//重置换行
                     }
@@ -199,39 +190,6 @@ class graphTraverseResult extends linkedForest{//图深度优先遍历的结果
     }
     showString(){
         console.log(super.beString());
-    }
-    customString(fun){//森林深度优先遍历
-        let arr = this.arr, s = new stack(arr.length), str = "", d, iterator, forestNode, indent, indentStep, ifLine = false;
-        for(let i = 0; i < arr.length; i ++){
-            //d表示层数，每次向下降一层加一，indent表示下一次添加字符需要几个\t
-            if(arr[i].p == null){
-                d = 0;
-                indent = 1;
-                if(ifLine) str += "\n";//是否换行
-                str += `t[${i}]: \t` + fun(arr[i]);
-                iterator = arr[i].child.valIterator();//子节点由双循环队列组成
-                ifLine = false;//换行了下一行不换
-                do{
-                    while(iterator.hasNext()){
-                        d ++;
-                        forestNode = iterator.next();
-                        if(ifLine) str += "\n";//换行
-                        for(indentStep = 0; indentStep < indent; indentStep ++) str += "\t";//保持输出对齐
-                        str += fun(forestNode);
-                        s.push(iterator);
-                        iterator = forestNode.child.valIterator();
-                        indent = 1;//重置缩进的制表符
-                        ifLine = false;//重置换行
-                    }
-                    ifLine = true;//开始回溯，所以换行输出结果
-                    indent = d + 1;//arr[i]占一个制表符，所以换行后的制表符多一
-                    d --;
-                    if(s.isEmpty()) break;
-                    else iterator = s.pop();
-                }while(true)
-            }
-        }
-        return str;
     }
 }
 class weightGraphNode{//带权图的邻接链表节点，from出发边，vertex目的边，weight权重
@@ -501,6 +459,10 @@ class doubleLinkedList{//注意不可以对已经删除的节点再删除，和�
         this.n = 0;
         //注意链表的结点需要有left和right属性，showString函数需要key值
     }
+    clear(){
+        this.n = 0;
+        this.door = null;
+    }
     isEmpty(){
         return this.door == null;
     }
@@ -587,7 +549,7 @@ class doubleLinkedList{//注意不可以对已经删除的节点再删除，和�
                     value: node,
                     done: ifEnd
                 };
-                if(node.right == that.door) ifEnd = true;
+                if(node.right == that.door || that.door == null) ifEnd = true;
                 node = node.right;
                 return obj;
             }
@@ -598,7 +560,7 @@ class doubleLinkedList{//注意不可以对已经删除的节点再删除，和�
         return {
             next() {
                 val = node.data;
-                if(node.right == that.door) ifEnd = true;
+                if(node.right == that.door || that.door == null) ifEnd = true;
                 node = node.right;
                 return val;
             },
@@ -608,32 +570,248 @@ class doubleLinkedList{//注意不可以对已经删除的节点再删除，和�
         };
     }
     showString(){//将循环链表的键值用字符串输出到控制台
-        console.log(this.beString());
+        console.log(this.customString((a)=>a.key));
     }
-    beString(){
+    customString(handle){
         if(this.isEmpty()) {
             return "null";
         }
         let str = '';
         for(let a of this){
-            str += a.key + " ⇋ ";
+            str += handle(a) + " ⇋ ";
         }
         return str;
-    }
-    beStringByData(handle){
-        if(this.isEmpty()) {
-            return "null";
-        }
-        let str = '';
-        for(let a of this){
-            str += handle(data) + " ⇋ ";
-        }
-        return str;
-    }
-    showStringByData(handle){
-        console.log(this.beStringByData(handle));
     }
 }
+function getWidth(num){
+    let i = 1;
+    while((num/=10) >= 1) i++;
+    return i;
+}
+class fibHeap{
+    constructor(){
+        this.min = null;//指向堆的最小键值结点
+        this.rootList = new doubleLinkedList();//由根结点构成的双循环链表
+        this.n = 0;//总结点数
+        this.arr = null;//度数数组
+    }
+    isEmpty(){
+        return this.min == null;
+    }
+    checkNode(node){
+        if(node instanceof fibHeapNode) return true;
+        return false;
+    }
+    showString(){//把堆结构打印到控制台
+        console.log(this.customString((a)=>`${a.key}`));
+    }
+    customString(handle){//把堆结构打印到控制台
+        if(this.min == null) {
+            console.log("null");
+            return;
+        }
+        let str = "", space = "", i, maxNumLen = 4, degreeLen = maxNumLen >>> 1, frontInfoLen = 5 + degreeLen, frontSpace = "", ifLine = false;
+        //maxNumLen表示最长的数字位数,frontInfoLen表示前面存放前置信息的长度
+        for(i = 0; i < maxNumLen + 3; i ++){//3代表每个节点中间的连接符号占三个字符，这里连接符号是□→□
+            space += " ";
+        }
+        for(i = 0; i < frontInfoLen; i ++){
+            frontSpace += " ";
+        }
+        let fun = (h, width)=>{
+            for(let a of h){
+                if(width == 0){
+                    i = degreeLen - getWidth(a.degree);
+                    str += `d[${a.degree}]: `;
+                    while(i > 0){
+                        str += " ";
+                        i --;
+                    }
+                }else if(ifLine){
+                    str += frontSpace;
+                }
+                ifLine = false;
+                str += handle(a);
+                if(a.degree > 0){
+                    i = maxNumLen - handle(a).length;
+                    if(i < 0) str += "→ ";//当超过maxnum时，如对于maxnum=4，则如下所示
+                    //4567□→□
+                    //45678→□
+                    //123□□→□
+                    else {
+                        while(i > 0){
+                            str += " ";
+                            i --;
+                        }
+                        str+=" → ";
+                    }
+                    fun(a.childList, width + 1);//打印子列表，深度遍历打印
+                }
+                if(a.right != h.door) {//因为是深度遍历，在打印兄弟节点时换行
+                    ifLine = true;
+                    str += "\n";
+                    for(i = 0; i < width; i ++){
+                        str += space;
+                    }
+                }
+            }
+        }
+        fun(this.rootList, 0);
+        return str;
+    }
+    delete(node){
+        if(!this.checkNode(node)) return false;
+        this.decreaseKey(node, -Infinity);
+        this.extractMin();
+        return true;
+    }
+    decreaseKey(node, k){//将node节点的键值减小
+        if(!this.checkNode(node)) return false;
+        if(k > node.key){
+            console.log(`new key: ${k}, old key: ${node.key}`);
+            return;
+        }
+        node.key = k;
+        let p = node.p;
+        if(p != null && k < p.key){
+            this.cut(p, node)
+            this.cascadingCut(p);
+        }
+        if(k < this.min.key) this.min = node;
+        return true;
+    }
+    cut(p, node){//将node从其父节点p中剪切掉插入根链表中
+        p.degree --;
+        p.childList.nodeDelete(node);//注意先删除再插入问题，对在堆中的节点去插入是错误的
+        node.p = null;
+        node.mark = false;
+        this.rootList.nodeInsert(node);
+    }
+    cascadingCut(node){//如果node节点成为别人的子节点并丢失过子节点，进行级联剪切，保证子节点数量的下界
+        let p = node.p;
+        if(p != null){
+            if(node.mark){
+                this.cut(p, node)
+                this.cascadingCut(p);
+            }else node.mark = true;
+        }
+    }
+    check(){//检查堆结构正确性
+        for(let a of this.rootList){
+            if(!a.check()) return false;
+        }
+        return true;
+    }
+    creatNode(key, data){//生成一个fib堆的节点
+        return new fibHeapNode(key, data);
+    }
+    insert(node){//将fib节点插入fib堆
+        if(!(node instanceof fibHeapNode)) return false;
+        if(this.min == null) this.min = node;
+        else if(this.min.key > node.key) this.min = node;
+        this.rootList.nodeInsert(node);
+        this.n ++;
+        return true;
+    }
+    minimum(){//返回最小节点
+        return this.min;
+    }
+    union(h){//连接两个fib堆
+        let m1 = this.min || h.min, m2 = h.min || this.min;
+        this.min = m1<m2?m1:m2;
+        this.rootList.union(h.rootList);
+        this.n += h.n;
+    }
+    extractMin(){//提取最小节点
+        let node = this.min;
+        if(node != null){
+            if(node.degree > 0) {
+                if(node.childList == null){
+                    console.log(this.rootList, node);
+                }
+                for(let a of node.childList){
+                    a.p = null;
+                    this.rootList.nodeInsert(a);//因为在获得a节点之前，遍历器已经获得a节点的后继节点，可以改变a节点的信息
+                }
+            }
+            this.rootList.nodeDelete(node);//删除不改变node节点的值
+            if(node.right == node) {
+                this.min = null;
+            }
+            else{
+                this.min = node.right;
+                this.consolidate();
+            }
+            this.n --;
+        }
+        return node;
+    }
+    consolidate(){//在体取最小节点后完成对堆中所有根节点的度数保持不相同的状态
+        let temp = 2*floor(Math.log2(this.n)), d, y, A = this.arr;
+        if(A == null || A.length < temp){
+            A = new Array(temp);
+        }
+        for(let i = 0; i < temp; i ++) A[i] = null;
+        for(let a of this.rootList){//因为有输出操作，使用链表节点遍历器快速删除
+            d = a.degree;
+            if(d >= temp) {
+                fib = this;
+                console.log(a);
+                throw new Error(`MaxDegree: ${temp}, node: ${d}`);
+            }
+            while(A[d] != null){
+                y = A[d];
+                if(y.key < a.key){
+                    [a, y] = [y, a];
+                }
+                this.rootList.nodeDelete(y);//注意这里在遍历根链表时删除了正在遍历的节点，可以这样做的原因是，遍历器已经获得遍历节点的后继节点信息
+                a.insert(y);//注意这里先删除再插入，因为插入动作会改变y节点的左右节点指向，而删除操作需要改变y的左右节点指向y的指针，使y的左右节点互相引用。
+                A[d] = null;
+                d ++;
+            }
+            A[d] = a;
+        }
+        for(let i = 0; i < temp; i ++) {
+            if(A[i] != null){
+                if(A[i].key < this.min.key) this.min = A[i];
+            }
+        }
+        this.arr = A;
+    }
+}
+class fibHeapNode extends listNode{
+    constructor(key, data){
+        super(data);
+        this.key = key;
+        this.degree = 0;//子节点的个数
+        this.mark = false;
+        this.p = null;
+        this.childList = new doubleLinkedList();//指向由子节点构成的双循环链表
+    }
+    insert(fibNode){//插入此节点的子节点循环链表
+        fibNode.p = this;
+        fibNode.mark = false;
+        this.childList.nodeInsert(fibNode);
+        this.degree ++;
+    }
+    check(){//递归的检查以此节点为根的子树的正确性，检查双循环链表的正确性要遍历链表节点
+        let i = 0, j = this.degree;
+        if(j != 0 && this.childList == null) return false;
+        if(j == 0) return true;
+        for(let a of this.childList){
+            if(a.right.left != a) return false;
+            if(a.p != this) return false;
+            if(!(a.check())) return false; 
+            i ++;
+        }
+        if(i != j) return false;
+        return true;
+    }
+    getKey(){
+        return this.key;
+    }
+}
+var {random, floor} = Math;
 function initializeSingleSource(G){
     let arr = new graphTraverseResult(G.n, G.getInfo());
     for(let node of arr){
@@ -672,7 +850,7 @@ function bellmanFord(G, sourceVertex, result) {
             return false;
         }
     }
-    return true;
+    return true;//返回结果是graphTraverseResult，继承与linkedforest，所以对结果直接调用打印函数。
 }
 function getWGN(...arg){//生成weightGraphNode节点
     return new weightGraphNode(...arg);
@@ -718,7 +896,7 @@ function topologicalDAGShortestPaths(G, s){//directed acyclic graph，计算有�
         }
     }
     result.noChildTrim();
-    return result;
+    return result;//返回结果是graphTraverseResult，继承与linkedforest，所以对结果直接调用打印函数。
 }
 function testTopoDagShortestPaths(){
     let info = ["s", "t", "x", "y", "z", "r"], G = new linkedGraph(6, info), i;
@@ -755,8 +933,8 @@ function criticalPath(G, s){//有向无环图最长路径，即关键路径
             bigRelax(node, result.get(wgn.vertex), wgn.weight);
         }
     }
-    result.noChildTrim();
-    return result;
+    result.noChildTrim();//这里因为路径中的权重会动态改变，
+    return result;//返回结果是graphTraverseResult，继承与linkedforest，所以对结果直接调用打印函数。
 }
 function testCriticalPath(){
     let info = ["s", "t", "x", "y", "z", "r"], G = new linkedGraph(6, info), i;
@@ -778,4 +956,64 @@ function testCriticalPath(){
     A = criticalPath(G, 0);
     console.log(A.customString(customHandleFunForBellmanFord));
 }
-testCriticalPath();
+function heapRelax(Q, u, v, weight){//堆的堆路径松弛函数，需要使用decreaseKey，其中设置data信息中的p，用于将结果整理成树的形式
+    if(v.getKey() > u.getKey() + weight){
+        Q.decreaseKey(v, u.getKey() + weight);
+        v.getData().p = u;
+    }
+}
+// testCriticalPath();
+function dijkstra(G, s){
+    let i, Q = new fibHeap(), arr = new Array(G.n), uFibNode, iterator, wgn, result = new Array(G.n);
+    for(i of G){
+        arr[i] = Q.creatNode(Infinity, {
+            index: i,
+            info: G.info[i],
+            p: null
+        });
+        Q.insert(arr[i]);
+    }
+    Q.decreaseKey(arr[s], 0);
+    i = 0;
+    while(!(Q.isEmpty())){
+        uFibNode = Q.extractMin();
+        result[i ++] = uFibNode;
+        uFibNode.p = uFibNode.getData().p;
+        iterator = G.wgnIterator(uFibNode.getData().index);
+        while(iterator.hasNext()){
+            wgn = iterator.next();
+            heapRelax(Q, arr[wgn.from], arr[wgn.vertex], wgn.weight);
+        }
+    }
+    for(uFibNode of result){
+        uFibNode.childList.clear();
+    }
+    linkedForest.prototype.noChildTrim.call({arr: result});
+    return result;//返回fib节点数组，其中内含一棵树，可以但是fib节点没有实现linkedForestNode，所以不能使用森林的customString打印，所以可以用数组伪造一个fib堆使用fib的打印
+}
+function testdijkstra(){
+    let info = ["s", "t", "x", "z", "y"], G = new linkedGraph(5, info), i;
+    arr = [
+        getWGN(0,1,10),
+        getWGN(0,4,5),
+        getWGN(1,4,2),
+        getWGN(1,2,1),
+        getWGN(2,3,4),
+        getWGN(3,2,6),
+        getWGN(3,0,7),
+        getWGN(4,3,2),
+        getWGN(4,2,9),
+        getWGN(4,1,3)
+    ];
+    for(i = 0; i < arr.length; i ++) {
+        G.insertWGN(arr[i]);
+    }
+    A = dijkstra(G, 0);
+    console.log(stringForFibResult(A));
+}
+function stringForFibResult(result){
+    let fakedFib = new doubleLinkedList();
+    fakedFib.nodeInsert(result[0]);
+    return fibHeap.prototype.customString.call({rootList: fakedFib, min: 0}, (a)=>`${a.getData().info}:${a.getKey()}`);//fib堆打印需要根链表跳过空fib严重，空fib严重通过min值是否为nul验证。
+}
+testdijkstra();
