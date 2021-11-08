@@ -882,7 +882,7 @@ function sameComponent(arr, u, v){
     return false;
 }
 let root;//高度较为平衡的树根？树高详情看书不相交集合的理论部分
-function kruskal(G){//kruskal算法最小生成树，使用linkedGraph，参数为带权图，返回生成树的边
+function kruskal(G){//kruskal算法最小生成树，使用linkedGraph，参数为带权无向图，返回生成树的边
     let arr = new Array(G.n), i, edges = G.getEdges(), u, v, A = new Array(G.n - 1);
     edges.sort((a, b)=>a.weight - b.weight);
     for(i = 0; i < arr.length; i ++) arr[i] = new disjointSet({vertex: i, info: G.getInfo(i)});
@@ -1002,7 +1002,7 @@ function DFS(G){//递归dfs
     return result;
 }
 var fib;
-function prim(G, root = 0){
+function prim(G, root = 0){//这两个生成树都是针对无向图
     let Q = new fibHeap(), arr = new Array(G.n), i, iterator, vertexFibNode, wgn, result = new Array(G.n - 1), index;
     fib = Q;
     for(i = 0; i < G.n; i ++){

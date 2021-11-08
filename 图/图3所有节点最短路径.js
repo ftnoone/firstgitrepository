@@ -202,16 +202,22 @@ function exchange(arr, a, b){
     arr[a] = arr[b];
     arr[b] = temp;
 }
-class linkedGraph{//带权有向图
+
+class matrixGraph{//带权有向图
     //无向图用linkedGraph实现需插入(u,v),(v,u)两个有向边，因为dfs遍历的实现会创建新的数据结构存放图的顶点，并会对遍历过的值做标记，所以重复插入对dfs遍历没有影响
     constructor(n, info){
         this.e = new Array(n);//邻接边集
-        for(let i = 0; i < n; i ++) this.e[i] = new doubleLinkedList();
+        for(let i = 0; i < n; i ++) {
+            this.e[i] = new Array(n).fill(Infinity);
+            this.e[i][i] = 0;
+        }
         this.n = n;//顶点数
         this.info = null;//顶点的名字
         this.edgeNum = 0;//边数
-        this.edges = new dynamicArray();
         this.setInfo(info);
+    }
+    getMatrix(){
+        return this.e;
     }
     [Symbol.iterator]() {//对图的节点进行遍历，当添加删除操作时，注意遍历器的实现
         let i = 0, n = this.n;
@@ -302,9 +308,6 @@ class linkedGraph{//带权有向图
     dfsShow(){//展示dfs后的结果
         this.dfs().showString();
     }
-    getEdges(){//获得边集，一个weightgraphnode的数组
-        return this.edges;
-    }
     setInfo(info){//设置节点信息，位置和索引一一对应
         if(info instanceof Array){
             if(info.length >= this.n) this.info = info;
@@ -318,43 +321,25 @@ class linkedGraph{//带权有向图
     }
     memberE(a, b){//是否存在边（a，b）
         if(this.check(a) && this.check(b)){
-            let iterator = this.e[a].valIterator();
-            while(iterator.hasNext()){
-                if(iterator.next().vertex == b) return true;
-            }
+            let val = this.e[a][b];
+            if(val != Infinity) return true;
         }
         return false;
     }
     setWeight(a, b, w){//设置edge(a, b)的权重
         if(this.check(a) && this.check(b)){
-            let iterator = this.e[a].valIterator(), graphNode;
-            while(iterator.hasNext()){
-                graphNode = iterator.next();
-                if(graphNode.vertex == b) {
-                    graphNode.weight = w;
-                    return true;
-                }
-            }
+            this.e[a][b] = w;
         }
-        return false;
     }
     getWeight(a, b){//获得edge(a, b)的权重，不存在边返回权重0
         if(this.check(a) && this.check(b)){
-            let iterator = this.e[a].valIterator(), graphNode;
-            while(iterator.hasNext()){
-                graphNode = iterator.next();
-                if(graphNode.vertex == b) {
-                    return graphNode.weight;
-                }
-            }
+            return this.e[a][b];
         }
         return 0;
     }
     insertE(a, b, w = 1){//插入边，需要先检查不存在这个边防止重复插入
         if(!this.memberE(a, b)){
-            let weightNode = new weightGraphNode(a, b, w);
-            this.edges.add(weightNode);
-            this.e[a].insert(weightNode);
+            this.e[a][b] = w;
             this.edgeNum ++;
             return true;
         }else return false;
@@ -362,76 +347,89 @@ class linkedGraph{//带权有向图
     insertWGN(wgn){//插入weightgraphnode带权节点，需要先检查不存在这个边防止重复插入
         if(wgn instanceof weightGraphNode){
             if(!this.memberE(wgn.from, wgn.vertex)){
-                this.edges.add(wgn);
-                this.e[wgn.from].insert(wgn);
+                this.e[wgn.from][wgn.vertex] = wgn.weight;
                 this.edgeNum ++;
                 return true;
             }
         }else return false;
     }
-    deleteE(a, b){//注意这里没有实现边数组edges的删除
+    deleteE(a, b){
         if(this.check(a) && this.check(b)){//因为双循环队列的实现，使用直接删除节点很快。
-            for(let listNode of this.e[a]){
-                if(listNode.data.vertex == b) {
-                    this.e[a].nodeDelete(listNode);
-                    this.edgeNum --;
-                    return true;
-                }
-            }
+            this.e[a][b] = Infinity;
+            this.edge --;
         }
         return false;
+    }
+    getRow(a){
+        if(this.check(a)){
+            return this.e[a];
+        }
+        return null;
     }
     showString(){//展示邻接链表
         console.log(this.beString());
     }
+    showMatrix(){
+        let str = "", row, w;
+        for(let i = 0, len = this.n, j; i < len; i ++){
+            row = this.getRow(i);
+            for(j = 0; j < len; j ++){
+                w = row[j];
+                if(w == Infinity) w = "*";
+                str += `${w}\t`;
+            }
+            str += "\n";
+        }
+        console.log(str);
+        return str;
+    }
     beString(){
-        let str = "", iterator, graphNode;
+        let str = "", iterator, wgn;
         for(let i = 0, len = this.n; i < len; i ++){
             str += `[${i}]${this.getIndexInfo(i)}: `;
-            iterator = this.e[i].valIterator();
+            iterator = this.wgnIterator(i);
             while(iterator.hasNext()){
-                graphNode = iterator.next();
-                str += `→[${graphNode.vertex}]${this.getIndexInfo(graphNode.vertex)}:${graphNode.weight} `;
+                wgn = iterator.next();
+                str += `→[${wgn.vertex}]${this.getIndexInfo(wgn.vertex)}:${wgn.weight} `;
             }
             str += "\n";
         }
         return str;
     }
-    getIndexInfo(a){//返回indo数组
+    getIndexInfo(a){
         if(this.info == null) return null;
         else return this.info[a];
     }
     getInfo(){
         return this.info;
     }
-    indexIterator(a){//下层是双循环链表，对上提供对顶点a的邻接链表的迭代器，返回值是节点索引
+    indexIterator(a){
         if(!this.check(a)) return null;
-        let adj = this.e[a], node = adj.door, vertex, hasN = adj.door != null;
+        let adj = this.e[a], i = 0, n = this.n, vertex;
         return {
             next(){
-                vertex = node.data.vertex;//节点索引
-                node = adj.successorNode(node);
-                hasN = node != adj.door;
+                vertex = i;
+                i ++;
                 return vertex;
             },
             hasNext(){
-                return hasN;
+                while(i < n && adj[i] == Infinity) i ++;
+                return i < n;
             },
             key: a
         }
     }
     wgnIterator(a){//下层是双循环链表，对上提供对顶点a的邻接链表的迭代器，返回值是带权图节点，weightgraphnode
         if(!this.check(a)) return null;
-        let adj = this.e[a], node = adj.door, wgn, hasN = adj.door != null;
+        let adj = this.e[a], wgn = new weightGraphNode(a), iterator = this.indexIterator(a);
         return {
             next(){
-                wgn = node.data;//节点索引
-                node = adj.successorNode(node);
-                hasN = node != adj.door;
+                wgn.vertex = iterator.next();//节点索引
+                wgn.weight = adj[wgn.vertex];
                 return wgn;
             },
             hasNext(){
-                return hasN;
+                return iterator.hasNext();
             },
             key: a
         }
@@ -825,188 +823,199 @@ function bigRelax(u, v, weight){
         v.setP(u);
     }
 }
-function bellmanFord(G, sourceVertex, result) {//有向图，可有环有负值，且能判断图是否包含无限负值环
-    let i, borderLen = G.n - 1, edges = G.getEdges(), edge;
-    result = initializeSingleSource(G);
-    A = result;
-    result.get(sourceVertex).d = 0;
-    for(i = 0; i < borderLen; i ++){
-        for(edge of edges){
-            relax(result.get(edge.from), result.get(edge.vertex), edge.weight);
+function testMatrixGraph(){
+    let g = new matrixGraph(5, ["1", "2", "3", "4", "5"]);
+    g.insertE(0,1,3);
+    g.insertE(0,2,8);
+    g.insertE(0,4,-4);
+    g.insertE(1,3,1);
+    g.insertE(1,4,7);
+    g.insertE(2,1,4);
+    g.insertE(3,2,-5);
+    g.insertE(3,0,2);
+    g.insertE(4,3,6);
+    g.showMatrix();
+    g.dfsShow();
+    g.showString();
+}
+function extendShortestPaths(L, W, pathM, result){//假设L是允许最长x条边的最短路径矩阵，使用W中的权重，也可假设W是允许最长y条边的最短路径矩阵，对于有向图无负值环路最短路径有最多n-1条边，这里新生成的是允许最长x+y条边的最短路径矩阵，使用动态规划方法
+    //ijk循环改成ikj循环，增加局部变量，优化局部性，提高缓存命中
+    let n = L.length, i, j, k, sum, resultRow, Wrow, temp, pathMrow;
+    for(i = 0; i < n; i ++){
+        resultRow = result[i];
+        pathMrow = pathM[i];
+        for(k = 0; k < n; k ++){
+            temp = L[i][k];
+            Wrow = W[k];
+            for(j = 0; j < n; j ++){
+                sum = temp + Wrow[j];
+                if(sum < resultRow[j]) {
+                    resultRow[j] = sum;
+                    pathMrow[j] = k;//存放i到j的最短路径之间经过的是哪个顶点
+                }
+            }
         }
     }
-    let u, v;
-    result.noChildTrim();
-    for(edge of edges){
-        u = result.get(edge.from);
-        v = result.get(edge.vertex);
-        if(v.d > u.d + edge.weight){
-            return false;
+}
+function ceilLog2(n){
+    let i = 0;
+    while(n != 0) {
+        n >>>= 1;
+        i ++;
+    }
+    return i;
+}
+function fastAllPairsShortestPaths(mg){//动态规划全节点对最短路径， O(lg|V|*|V|^3)
+    let n = mg.n, i, l1 = mg.getMatrix(), l2 = new Array(n), pathM = new Array(n);
+    for(i = 0; i < n; i ++) {
+        pathM[i] = new Array(n);
+        l2[i] = new Array(n).fill(Infinity);
+    }
+    n -= 1;
+    i = 1;
+    while(i < n){
+        //l2放权重结果，最短路径最多含n个节点，n-1条边，有最优子结构对于n-1条边的最短路径等于两个(n-1)/2条边的最短路径的拼接中最短的路径
+        //自底向上方法
+        extendShortestPaths(l1, l1, pathM, l2);
+        l1 = l2;
+        i <<= 1;
+    }
+    return {
+        weightM: l1,
+        pathM: pathM
+    };
+}
+function copyMatrix(mSourse, mDes){//复制二维方阵
+    let n = mSourse.length;
+    for(let i = 0, j, s, d; i < n; i ++){
+        s = mSourse[i];
+        d = mDes[i];
+        for(j = 0; j < n; j ++){
+            d[j] = s[j];
         }
     }
-    return true;//返回结果是graphTraverseResult，继承与linkedforest，所以对结果直接调用打印函数。
 }
-function getWGN(...arg){//生成weightGraphNode节点
-    return new weightGraphNode(...arg);
+function matrixPrint(m, n){//打印二维方阵
+    matrixGraph.prototype.showMatrix.call({
+        getRow(i){
+            return m[i];
+        },
+        n: n
+    });
 }
-let time, arr, A;
-function testBellmanFord(){//对书上一个图测试BellmanFord单源最短路径算法
-    let info = ["s", "t", "x", "z", "y"], G = new linkedGraph(5, info), i;
-    arr = [
-        getWGN(0,1,6),
-        getWGN(1,2,5),
-        getWGN(2,1,-2),
-        getWGN(1,3,-4),
-        getWGN(1,4,8),
-        getWGN(3,2,7),
-        getWGN(3,0,2),
-        getWGN(4,2,-3),
-        getWGN(4,3,9),
-        getWGN(0,4,7)
-    ];
-    for(i = 0; i < arr.length; i ++) {
-        G.insertWGN(arr[i]);
+function printPathMatrixIToJ(m, i, j){//通过路径方阵打印i到j的路径
+    let index = m[i][j], str = "";
+    if(index != i && index != j){//不是两端节点说明有中间节点
+        str += `${printPathMatrixIToJ(m, i, index)}${index}->${printPathMatrixIToJ(m, index, j)}`;
     }
-    if(bellmanFord(G, 0, A)) console.log(A.customString(customHandleFunForBellmanFord));
-    else console.log("?")
+    return str;
 }
-function customHandleFunForBellmanFord(forestNode){
-    if(forestNode instanceof graphTraverseResultNode){
-        return `${forestNode.key}:${forestNode.d}`;
-    }
-}
-function topologicalDAGShortestPaths(G, s){//directed acyclic graph，计算有向无环图单源最短路径，可有负值
-    let iterator, wgn;
-    result = G.topoSort();
-    for(let node of result){
-        node.d = Infinity;
-    }
-    result.get(s).d = 0;
-    for(let node of result){
-        iterator = G.wgnIterator(node.data);
-        while(iterator.hasNext()){
-            wgn = iterator.next();
-            relax(node, result.get(wgn.vertex), wgn.weight);
+function printPathMatrix(m, w){//通过路径方阵和最短权重方阵打印所有可达最短路径
+    let i, j, str, n = m.length;
+    for(i = 0; i < n; i ++){
+        for(j = 0; j < n; j ++){
+            str = printPathMatrixIToJ(m, i, j);
+            console.log(`${i}-${j},\tw: ${w[i][j]},\tpath: ${i}->${str}${j}`)
         }
     }
-    result.noChildTrim();
-    return result;//返回结果是graphTraverseResult，继承与linkedforest，所以对结果直接调用打印函数。
 }
-function testTopoDagShortestPaths(){
-    let info = ["s", "t", "x", "y", "z", "r"], G = new linkedGraph(6, info), i;
-    arr = [
-        getWGN(0,1,2),
-        getWGN(0,2,6),
-        getWGN(1,2,7),
-        getWGN(1,3,4),
-        getWGN(1,4,2),
-        getWGN(2,3,-1),
-        getWGN(2,4,1),
-        getWGN(3,4,-2),
-        getWGN(5,0,5),
-        getWGN(5,1,3)
-    ];
-    for(i = 0; i < arr.length; i ++) {
-        G.insertWGN(arr[i]);
-    }
-    A = topologicalDAGShortestPaths(G, 0);
-    console.log(A.customString(customHandleFunForBellmanFord));
+function testFAPSP(){
+    let g = new matrixGraph(5, ["1", "2", "3", "4", "5"]), n = g.n;
+    g.insertE(0,1,3);
+    g.insertE(0,2,8);
+    g.insertE(0,4,-4);
+    g.insertE(1,3,1);
+    g.insertE(1,4,7);
+    g.insertE(2,1,4);
+    g.insertE(3,2,-5);
+    g.insertE(3,0,2);
+    g.insertE(4,3,6);
+    let result = fastAllPairsShortestPaths(g);
+    matrixPrint(result.weightM, n);
+    matrixPrint(result.pathM, n);
+    printPathMatrix(result.pathM, result.weightM);
 }
-// testTopoDagShortestPaths()
-function criticalPath(G, s){//有向无环图最长路径，即关键路径
-    let iterator, wgn;
-    result = G.topoSort();
-    for(let node of result){
-        node.d = -Infinity;
+// testFAPSP();
+function floydWarshall(g, pathMatrix){
+    let i, m = g.getMatrix(), n = g.n, m1 = new Array(n), m2 = new Array(n), j, k, temp, kSum;
+    for(i = 0; i < n; i ++) {
+        m2[i] = new Array(n);
+        m1[i] = new Array(n);
     }
-    result.get(s).d = 0;
-    for(let node of result){
-        iterator = G.wgnIterator(node.data);
-        while(iterator.hasNext()){
-            wgn = iterator.next();
-            bigRelax(node, result.get(wgn.vertex), wgn.weight);
+    copyMatrix(m, m1);
+    for(k = 0; k < n; k ++){
+        for(i = 0; i < n; i ++){
+            for(j = 0; j < n; j ++){
+                temp = m1[i][j];
+                if(temp > (kSum = m1[i][k] + m1[k][j])) {
+                    temp = kSum;
+                    pathMatrix[i][j] = k;
+                }
+                m2[i][j] = temp;
+            }
+        }
+        [m1, m2] = [m2, m1];
+    }
+    return m1;
+}
+function testFloyd(){
+    let g = new matrixGraph(5, ["1", "2", "3", "4", "5"]), n = g.n, i, pathMatrix = new Array(n);
+    for(i = 0; i < n; i ++) {
+        pathMatrix[i] = new Array(n).fill(i);
+    }
+    g.insertE(0,1,3);
+    g.insertE(0,2,8);
+    g.insertE(0,4,-4);
+    g.insertE(1,3,1);
+    g.insertE(1,4,7);
+    g.insertE(2,1,4);
+    g.insertE(3,2,-5);
+    g.insertE(3,0,2);
+    g.insertE(4,3,6);
+    let result = floydWarshall(g, pathMatrix);
+    matrixPrint(result, n);
+    matrixPrint(pathMatrix, n);
+    printPathMatrix(pathMatrix, result);
+}   
+// testFloyd();
+
+//n个元素的二元关系的传递闭包计算，二元关系即集合A和集合B的笛卡尔积，记为A × B = {(a, b) | a ∈ A且b ∈ B}
+//对于m方阵，元素为1或0，m[i][j]为1表示i和j存在二元关系
+function transitiveClosure(m){
+    let n = m.length, m1 = new Array(n), m2 = new Array(n), i, j, k;
+    for(i = 0; i < n; i++){
+        m1[i] = new Array(n);
+        m2[i] = new Array(n);
+    }
+    let mRowi, m1Rowi;
+    for(i = 0; i < n; i ++){
+        mRowi = m[i];
+        m1Rowi = m1[i];
+        for(j = 0; j < n; j ++){
+            m1Rowi[j] = !!mRowi[j];
         }
     }
-    result.noChildTrim();//这里因为路径中的权重会动态改变，
-    return result;//返回结果是graphTraverseResult，继承与linkedforest，所以对结果直接调用打印函数。
-}
-function testCriticalPath(){
-    let info = ["s", "t", "x", "y", "z", "r"], G = new linkedGraph(6, info), i;
-    arr = [
-        getWGN(0,1,2),
-        getWGN(0,2,6),
-        getWGN(1,2,7),
-        getWGN(1,3,4),
-        getWGN(1,4,2),
-        getWGN(2,3,-1),
-        getWGN(2,4,1),
-        getWGN(3,4,-2),
-        getWGN(5,0,5),
-        getWGN(5,1,3)
-    ];
-    for(i = 0; i < arr.length; i ++) {
-        G.insertWGN(arr[i]);
-    }
-    A = criticalPath(G, 0);
-    console.log(A.customString(customHandleFunForBellmanFord));
-}
-function heapRelax(Q, u, v, weight){//堆的堆路径松弛函数，需要使用decreaseKey，其中设置data信息中的p，用于将结果整理成树的形式
-    if(v.getKey() > u.getKey() + weight){
-        Q.decreaseKey(v, u.getKey() + weight);
-        v.getData().p = u;
-    }
-}
-testCriticalPath();
-function dijkstra(G, s){//有向图，不能有负权值
-    let i, Q = new fibHeap(), arr = new Array(G.n), uFibNode, iterator, wgn, result = new Array(G.n);
-    for(i of G){
-        arr[i] = Q.creatNode(Infinity, {
-            index: i,
-            info: G.info[i],
-            p: null
-        });
-        Q.insert(arr[i]);
-    }
-    Q.decreaseKey(arr[s], 0);
-    i = 0;
-    while(!(Q.isEmpty())){
-        uFibNode = Q.extractMin();
-        result[i ++] = uFibNode;
-        uFibNode.p = uFibNode.getData().p;
-        iterator = G.wgnIterator(uFibNode.getData().index);
-        while(iterator.hasNext()){
-            wgn = iterator.next();
-            heapRelax(Q, arr[wgn.from], arr[wgn.vertex], wgn.weight);
+    for(k = 0; k < n; k ++){
+        for(i = 0; i < n; i ++){
+            for(j = 0; j < n; j ++){
+                m2[i][j] = m1[i][j] | (m1[i][k] & m1[k][j]);
+            }
         }
+        [m1, m2] = [m2, m1];
     }
-    for(uFibNode of result){
-        uFibNode.childList.clear();
-    }
-    linkedForest.prototype.noChildTrim.call({arr: result});
-    return result;//返回fib节点数组，其中内含一棵树，可以但是fib节点没有实现linkedForestNode，所以不能使用森林的customString打印，所以可以用数组伪造一个fib堆使用fib的打印
+    return m1;
 }
-function testdijkstra(){
-    let info = ["s", "t", "x", "z", "y"], G = new linkedGraph(5, info), i;
-    arr = [
-        getWGN(0,1,10),
-        getWGN(0,4,5),
-        getWGN(1,4,2),
-        getWGN(1,2,1),
-        getWGN(2,3,4),
-        getWGN(3,2,6),
-        getWGN(3,0,7),
-        getWGN(4,3,2),
-        getWGN(4,2,9),
-        getWGN(4,1,3)
-    ];
-    for(i = 0; i < arr.length; i ++) {
-        G.insertWGN(arr[i]);
-    }
-    A = dijkstra(G, 0);
-    console.log(stringForFibResult(A));
+function testTransitiveClosure(){
+    let n = 4, m = new Array(n), i;
+    for(i = 0; i < n; i ++) m[i] = new Array(n).fill(0)
+    m[1][2] = 1;
+    m[1][3] = 1;
+    m[2][1] = 1;
+    m[3][2] = 1;
+    m[3][0] = 1;
+    for(i = 0; i < n; i ++) m[i][i] = 1;
+    matrixPrint(m, n);
+    let result = transitiveClosure(m);
+    matrixPrint(result, n);
 }
-function stringForFibResult(result){
-    let fakedFib = new doubleLinkedList();
-    fakedFib.nodeInsert(result[0]);
-    return fibHeap.prototype.customString.call({rootList: fakedFib, min: 0}, (a)=>`${a.getData().info}:${a.getKey()}`);//fib堆打印需要根链表跳过空fib严重，空fib严重通过min值是否为nul验证。
-}
+testTransitiveClosure();
