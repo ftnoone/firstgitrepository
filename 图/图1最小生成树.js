@@ -203,7 +203,7 @@ class graphTraverseResult extends linkedForest{//图深度优先遍历的结果
         if(this.traversed) console.log(super.beString());
     }
 }
-class weightGraphNode{//带权图的邻接链表节点，from出发边，vertex目的边，weight权重
+class weightGraphEdge{//带权图的邻接链表节点，from出发边，vertex目的边，weight权重
     constructor(from, vertex, weight){
         this.from = from;
         this.vertex = vertex;
@@ -331,7 +331,7 @@ class linkedGraph{//带权有向图
     }
     insertE(a, b, w = 1){//插入边，需要先检查不存在这个边防止重复插入
         if(!this.memberE(a, b)){
-            let weightNode = new weightGraphNode(a, b, w);
+            let weightNode = new weightGraphEdge(a, b, w);
             this.edges.add(weightNode);
             this.e[a].insert(weightNode);
             this.edgeNum ++;
@@ -339,7 +339,7 @@ class linkedGraph{//带权有向图
         }else return false;
     }
     insertWGN(wgn){//插入weightgraphnode带权节点，需要先检查不存在这个边防止重复插入
-        if(wgn instanceof weightGraphNode){
+        if(wgn instanceof weightGraphEdge){
             if(!this.memberE(wgn.from, wgn.vertex)){
                 this.edges.add(wgn);
                 this.e[wgn.from].insert(wgn);
@@ -898,28 +898,28 @@ function kruskal(G){//kruskal算法最小生成树，使用linkedGraph，参数�
     root = arr[0].findSet().getData().vertex;
     return A;
 }
-function getWGN(...arg){//生成weightGraphNode节点
-    return new weightGraphNode(...arg);
+function getWGE(...arg){//生成weightGraphNode节点
+    return new weightGraphEdge(...arg);
 }
 let time, arr;
 function testMinimumSpanningTree(){//对书上一个图测试最小生成树算法
     let info = ["a", "b", "c", "d", "e", "f", "g", "h", "i"], G = new linkedGraph(9, info), i;
     //注意将linkedGraph当无向图用
     arr = [
-        getWGN(0,1,4),
-        getWGN(1,2,8),
-        getWGN(2,3,7),
-        getWGN(3,4,9),
-        getWGN(4,5,10),
-        getWGN(5,3,14),
-        getWGN(5,2,4),
-        getWGN(5,6,2),
-        getWGN(6,7,1),
-        getWGN(7,0,8),
-        getWGN(7,1,11),
-        getWGN(7,8,7),
-        getWGN(8,2,2),
-        getWGN(8,6,6)
+        getWGE(0,1,4),
+        getWGE(1,2,8),
+        getWGE(2,3,7),
+        getWGE(3,4,9),
+        getWGE(4,5,10),
+        getWGE(5,3,14),
+        getWGE(5,2,4),
+        getWGE(5,6,2),
+        getWGE(6,7,1),
+        getWGE(7,0,8),
+        getWGE(7,1,11),
+        getWGE(7,8,7),
+        getWGE(8,2,2),
+        getWGE(8,6,6)
     ]
     for(i = 0; i < arr.length; i ++) {
         G.insertWGN(arr[i]);
@@ -942,27 +942,29 @@ function testPrim(){//对书上一个图测试最小生成树算法
     let info = ["a", "b", "c", "d", "e", "f", "g", "h", "i"], G = new linkedGraph(9, info), i;
     //注意将linkedGraph当无向图用
     arr = [
-        getWGN(0,1,4),
-        getWGN(1,2,8),
-        getWGN(2,3,7),
-        getWGN(3,4,9),
-        getWGN(4,5,10),
-        getWGN(5,3,14),
-        getWGN(5,2,4),
-        getWGN(5,6,2),
-        getWGN(6,7,1),
-        getWGN(7,0,8),
-        getWGN(7,1,11),
-        getWGN(7,8,7),
-        getWGN(8,2,2),
-        getWGN(8,6,6)
+        getWGE(0,1,4),
+        getWGE(1,2,8),
+        getWGE(2,3,7),
+        getWGE(3,4,9),
+        getWGE(4,5,10),
+        getWGE(5,3,14),
+        getWGE(5,2,4),
+        getWGE(5,6,2),
+        getWGE(6,7,1),
+        getWGE(7,0,8),
+        getWGE(7,1,11),
+        getWGE(7,8,7),
+        getWGE(8,2,2),
+        getWGE(8,6,6)
     ]
+    let temp1,temp2
     for(i = 0; i < arr.length; i ++) {
-        G.insertWGN(arr[i]);
-        G.insertE(arr[i].vertex, arr[i].from, arr[i].weight);
+        temp1 = G.insertWGN(arr[i]);
+        temp2 = G.insertE(arr[i].vertex, arr[i].from, arr[i].weight);
+        console.log(temp1, temp2)
     }
     let A = prim(G), t = new linkedGraph(9, info);
-    console.log(A);
+    //console.log(A);
     for(let a of A) {//无向图用linkedGraph实现需插入(u,v),(v,u)两个有向边，因为dfs遍历的实现会创建新的数据结构存放图的顶点，并会对遍历过的值做标记，所以重复插入对dfs遍历没有影响
         t.insertWGN(a);
         t.insertE(a.vertex, a.from, a.weight);
@@ -972,9 +974,9 @@ function testPrim(){//对书上一个图测试最小生成树算法
     arr = result.getArr();//因为使用递归dfs遍历需要全局变量arr,time，所以需要先赋值初始化
     dfsVisit(t, 0);//因为生成树是树，所以单独对树遍历即可
     result.beTraversed();//遍历完成
-    result.showString();//控制台输出结果
+    //result.showString();//控制台输出结果
 }
-testPrim();
+// testPrim();
 function dfsVisit(G, u){//相当于对以u为根的树进行遍历
     time ++;
     arr[u].d = time;
@@ -1019,7 +1021,7 @@ function prim(G, root = 0){//这两个生成树都是针对无向图
         fib.customString(customHandleFunForPrim);
         index = vertexFibNode.getData().index;
         if(index != root){
-            result[i ++] = new weightGraphNode(vertexFibNode.getData().p, index, vertexFibNode.getKey());
+            result[i ++] = new weightGraphEdge(vertexFibNode.getData().p, index, vertexFibNode.getKey());
         }
         arr[index] = null;
         iterator = G.wgnIterator(index);//带权图节点遍历器
@@ -1040,3 +1042,41 @@ function customHandleFunForPrim(key, data){
     if(key == Infinity) key = "*";
     return data.index +":"+key;
 }
+
+function critical(){//对书上一个图测试最小生成树算法
+    let info = ["v1", "v2", "v3", "v4", "v5", "v6", "v7"], G = new linkedGraph(info.length, info);
+    let p = new Array(info.length).fill(null), t1 = new Array(info.length).fill(0);
+    //注意将linkedGraph当无向图用
+    arr = [
+        getWGE(0,1,3),
+        getWGE(0,3,6),
+        getWGE(0,2,2),
+        getWGE(1,4,4),
+        getWGE(1,3,2),
+        getWGE(2,3,1),
+        getWGE(2,5,3),
+        getWGE(3,4,1),
+        getWGE(4,6,3),
+        getWGE(5,6,4)
+    ]
+    for(let i = 0; i < arr.length; i ++) {
+        G.insertWGN(arr[i]);
+    }
+    function dfs(u){//相当于对以u为根的树进行遍历
+        let iterator = G.wgnIterator(u), edge;
+        while(iterator.hasNext()){
+            edge = iterator.next();
+            if(t1[u] + edge.weight > t1[edge.vertex]){
+                t1[edge.vertex] = t1[u] + edge.weight;
+                p[edge.vertex] = u;
+                dfs(edge.vertex);
+            }
+        }
+    }
+    dfs(0);
+    for(let i = 0; i < info.length; i ++){
+        console.log(`${info[i]}<-${info[p[i]]}, 权重: ${t1[i]}\n`);
+    }
+    return p;
+}
+critical();
