@@ -17,7 +17,7 @@ function partition(arr, p, r){
                 swap(arr, j, smallPart);
             }
         }
-    }
+    } 
     return [smallPart, bigPart];//返回samllpart和bigpart索引
 }
 function getRandom(arr, a, b){//获得尽量位于中间区间的关键值

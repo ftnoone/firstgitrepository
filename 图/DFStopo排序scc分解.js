@@ -31,6 +31,18 @@ function print(arr){//打印dfs返回的数组结果，打印的
     }
     console.log(str);
 }
+class arrNode{//深度优先遍历的结果数组元素
+    constructor(key, index){
+        this.p = null;
+        this.d = 0;
+        this.f = 0;
+        this.color = 0;//0代表未遍历，1代表正在对其子节点进行遍历，2代表对此节点以及其子节点完成遍历
+        this.key = key;
+        this.child = new doubleLinkedList();
+        this.index = index;
+    }
+}
+
 let time, key, arr;
 function dfsVisit(G, u){
     time ++;
@@ -325,7 +337,8 @@ class doubleLinkedList{//注意不可以对已经删除的节点再删除，和�
 }
 var {random, floor} = Math;
 function topologicalOrder(){//拓扑排序，深度优先搜索，然后将每颗深度优先树的根节点进行排序，将完成时间最晚的放在前面
-    var a = new linkedGraph(9);//书上一个有向无环图的输入
+    var testInfo = ["村衣", "手表", "腰带", "内裤", "领带", "夹克", "裤子", "鞋", "袜子"];
+    var a = new linkedGraph(9, testInfo);//书上一个有向无环图的输入
     a.insertE(0,4);
     a.insertE(4,5);
     a.insertE(0,2);
@@ -335,8 +348,7 @@ function topologicalOrder(){//拓扑排序，深度优先搜索，然后将每�
     a.insertE(3,7);
     a.insertE(6,7);
     a.insertE(8,7);
-    var testInfo = ["村衣", "手表", "腰带", "内裤", "领带", "夹克", "裤子", "鞋", "袜子"];
-    var arr = stackDFS(a, testInfo);
+    var arr = stackDFS(a);
     print(arr);
     arr.sort((a, b)=>{
         if(a.p == null && b.p == null) return b.f - a.f;
@@ -344,18 +356,6 @@ function topologicalOrder(){//拓扑排序，深度优先搜索，然后将每�
     });
     print(arr);
 }
-class arrNode{//深度优先遍历的结果数组元素
-    constructor(key, index){
-        this.p = null;
-        this.d = 0;
-        this.f = 0;
-        this.color = 0;//0代表未遍历，1代表正在对其子节点进行遍历，2代表对此节点以及其子节点完成遍历
-        this.key = key;
-        this.child = new doubleLinkedList();
-        this.index = index;
-    }
-}
-
 function scc(){//strongly connected component，强连通分量，函数将有向图分解为强连通分量
     let info = ["c", "g", "f", "h", "d", "b", "e", "a"];
     let a = new linkedGraph(8, info);//书上一个有向图的输入
@@ -388,7 +388,7 @@ function scc(){//strongly connected component，强连通分量，函数将有�
     }
     print(arr);
 }
-scc();
+// scc();
 function transpose(G){//获得转置图，G中有边(u, v)，则在转置图Gt中存在边(v, u)
     let iterator, key, Gt = new linkedGraph(G.n);
     for(let a of G){
@@ -400,3 +400,4 @@ function transpose(G){//获得转置图，G中有边(u, v)，则在转置图Gt�
     }
     return Gt;
 }
+topologicalOrder()

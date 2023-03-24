@@ -1,6 +1,7 @@
+
 class queue{
     constructor(size){
-        if(size == undefined || size <= 1) throw new Error("参数不正确");
+        if(size == undefined) size = 1024;
         this.q = new Array(size);
         this.head = 0;
         this.tail = 0;
@@ -20,6 +21,10 @@ class queue{
             this.tail = (this.tail + 1) % this.n;
             return ele;
         }
+    }
+    length(){
+        if(this.tail < this.head) return this.tail + this.n - this.head;
+        else return this.tail - this.head;
     }
     isFull(){
         return (this.head + 1) % this.n == this.tail;
